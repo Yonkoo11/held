@@ -1,0 +1,16 @@
+{
+  "name": "outcomelock",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@hashgraph/sdk": "^2.81.0",
+    "@x402/core": "^2.25.0",
+    "@x402/fetch": "^2.25.0",
+    "@x402/hedera": "^2.25.0",
+    "express": "^5.2.1"
+  }
+}

@@ -13,10 +13,34 @@ All dated 2026-09-07 unless stated.
 - **Deadline: 2026-09-13, 12:00 EDT = 17:00 WAT.**
 - **Blocky402 testnet needs no account and no API key** — "Testnet MVP Ready - Open Access, No API
   Key Required". MIT, self-hostable, repo `blockydevs/blocky402`. Probed from blocky402.com.
-- **Blocky402 settles immediately on request.** Its documented flow is: client pays through the
-  facilitator, access is granted. **There is no deferred or escrowed settlement in it.** This is
-  the gap OutcomeLock fills, and it means the escrow must be our own contract — the x402 `payTo`
-  points at the escrow, not at the seller.
+- **CORRECTED 2026-09-10 from the installed type definitions, which beat the marketing copy.**
+  Yesterday's note said x402/Blocky402 has no deferred settlement. Not quite right. The Hedera
+  scheme declares `paymentFlows.default.supported = ["authorization", "upfront"]` with
+  `"authorization"` as the default — so settlement *can* be deferred past the request.
+  **But the deferral window is a Hedera transaction lifetime, not days:** the x402 Hedera payload is
+  `{ transaction: base64 }`, a partially-signed Hedera transaction, and those expire in minutes.
+  So the authorization flow cannot hold money for a buyer review period.
+  **Conclusion unchanged, reason corrected:** OutcomeLock still needs its own escrow. The x402
+  `payTo` points at an escrow account, settlement happens immediately into escrow, and release is a
+  separate, later Hedera transaction.
+- **Hedera testnet USDC is real and is the asset to price in:** token `0.0.429274`, symbol USDC,
+  6 decimals, FUNGIBLE_COMMON. Confirmed live on the mirror node 2026-09-10. Mainnet is `0.0.456858`.
+- **HTS association is a real trap.** `createHederaPreflightTransfer` fails the payment unless the
+  `payTo` account is associated with the token or has a free auto-association slot. The escrow
+  account MUST be associated with `0.0.429274` before it can receive a cent.
+- **The x402 packages depend on `@hiero-ledger/sdk`, not `@hashgraph/sdk`** — Hedera's SDK was
+  renamed. Mixing both means two SDK copies and two incompatible `AccountId` classes. Use
+  `@hiero-ledger/sdk` for anything that touches an x402 payload.
+- **CAIP-2 network id is `hedera:testnet`.** Not a chain-id number, not `hedera-testnet`.
+- **Useful x402 server API names** (from `@x402/core/server`): `x402HTTPResourceServer`,
+  `x402ResourceServer`, `HTTPFacilitatorClient`, `RouteConfig`, plus `BeforeSettleHook`,
+  `AfterSettleHook` and `SettlementOverrides` — the hooks are how settlement gets pointed at escrow.
+- **Live endpoints, probed 2026-09-10:** mirror node `https://testnet.mirrornode.hedera.com` 200;
+  JSON-RPC relay `https://testnet.hashio.io/api` returns chainId `0x128` (296) and a current block;
+  `https://blocky402.com/` and its `/docs/quickstart/` both 200.
+- **The mirror node schedules API exposes `wait_for_expiry` and `expiration_time`,** so long-term
+  scheduled transactions are at least modelled on testnet. Three recent schedules sampled; one had
+  executed. Whether we can *create* one with a multi-day expiry is still unproven.
 - **npm packages exist and are current:** `@x402/core` `@x402/fetch` `@x402/hedera` all v2.25.0,
   published 2026-09-03/04. `@hashgraph/sdk` 2.81.0. `hedera-agent-kit` 3.8.2.
 - These x402 packages are **four days old**. Their API is not in any model's training data.
@@ -30,12 +54,14 @@ All dated 2026-09-07 unless stated.
 
 ## Open Unknowns — DO NOT invent answers
 
-- Whether a Hedera scheduled transaction can be created with a future execution deadline and then
-  cancelled if the buyer acts first. This is what the auto-release depends on. Unprobed.
+- Whether a scheduled transaction can be created with a multi-day `expirationTime` and
+  `waitForExpiry`, then deleted early if the buyer acts first. The fields exist in the mirror node
+  schema; creating one needs credentials. **Still unproven — the auto-release depends on it.**
 - Whether HCS-14 agent identity has a usable SDK or is a spec only. Unprobed.
 - Whether the Hedera EVM (JSON-RPC relay) testnet endpoint is stable enough for contract deploys
   this week. Unprobed.
-- Whether node 20 is sufficient for `@x402/*` v2.25.0 or they require node 22. Unprobed.
+- Whether node 20 is sufficient for `@x402/*` v2.25.0. The packages declare no `engines.node` at
+  all, so nothing is promised either way. Install succeeded on node 20.19.5 (401 packages).
 
 **DO NOT invent endpoints, package APIs, or contract addresses.** Every one of the above gets
 measured and the answer written here with its date before any code depends on it.

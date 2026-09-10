@@ -32,3 +32,35 @@ around is not actually at this event.
 
 ### Next
 Probe Blocky402 + Hedera scheduled transactions before any feature code.
+
+## Session 2026-09-10
+
+### What Changed (Plain English)
+The thing now works. You can ask the agent a question, get told to pay, pay, read the answer, and
+then decide whether the seller keeps the money. All three endings work: you approve and they get
+paid, you reject and you get your money back, or you say nothing and they get paid when the clock
+runs out. Right now it runs on a local stand-in, not on Hedera, because there is still no Hedera
+account. Every receipt says so.
+
+### Verified by running it, not by reading it
+- Buy flow: 402 quoted 0.05 USDC on `hedera:testnet`, paid, deliverable returned, money held.
+- Approve -> released. Reject -> refunded. Silence past the deadline -> auto-released by the sweeper
+  (log line `[sweep] auto-released e2ac1ad2...`).
+- Evidence trail records paid / delivered / escrow-scheduled / released, each stamped `[degraded]`.
+- Worker failover is real: the Anthropic key on this machine returns
+  "Your credit balance is too low", the worker caught it, dropped to the deterministic tier, and the
+  demo continued. Confirms the credit problem AND that it no longer stops anything.
+- Facilitator handshake: `https://api.testnet.blocky402.com/supported` advertises
+  `exact / hedera:testnet` with feePayer `0.0.7162784`. Retry added after one transient boot failure.
+
+### NOT done - and one of these decides the prize
+- **The Hedera tier has never run.** No operator key has existed on this machine. Every Hedera code
+  path (HCS topic, real escrow transfer, scheduled release, real x402 payment) is written and
+  parses, and has executed exactly zero times. The track requires a live x402-gated service on
+  Hedera, so on today's tier the submission does not qualify.
+- No public URL yet. No README yet. No demo video yet.
+
+### Next, in order
+1. Hedera testnet account -> environment file -> re-run the same flow on the real tier.
+2. Associate the escrow account with USDC 0.0.429274 or payments fail preflight.
+3. Public tunnel URL, README, demo video.

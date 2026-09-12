@@ -12,6 +12,14 @@ node. Escrow [`0.0.10495061`](https://hashscan.io/testnet/account/0.0.10495061) 
 
 Built for ETHOnline 2026, Hedera "AI & Agentic Payments".
 
+![3 endings proven on testnet](https://img.shields.io/badge/endings_proven_on_testnet-3_of_3-2f6b43)
+![6 transactions confirmed on the mirror node](https://img.shields.io/badge/mirror--node_confirmed_transactions-6-2f6b43)
+![16 adversarial checks](https://img.shields.io/badge/adversarial_checks-16_of_16-b0431c)
+![13 regression checks](https://img.shields.io/badge/regression_checks-13_of_13-b0431c)
+![Apache 2.0](https://img.shields.io/badge/licence-Apache--2.0-6b6257)
+
+Every number above is re-runnable: `npm run prove`, `npm run attack`, `npm test`.
+
 ---
 
 ## The problem
@@ -99,6 +107,32 @@ transaction id and fails loudly if one cannot be found.
 | `SCHEDULE_GRACE_SECONDS` | `90` | how long past expiry to wait for the chain before releasing directly |
 | `DEMO_BUY` | off | lets the web page buy using the server's own account. Refused on a live tier unless set |
 | `MAX_QUESTION_CHARS` | `2000` | input cap |
+
+---
+
+## Project layout
+
+```
+src/
+  seller.js        the x402-gated service: quote, verify, work, settle into escrow, decide
+  buyer.js         a consumer agent that makes a real paid request
+  settlement.js    escrow. LocalSettlement | HederaSettlement behind one interface
+  store.js         job state. `transition` is the only legal way state changes
+  worker.js        the agent itself: four-tier provider cascade + circuit breaker
+  evidence.js      the HCS audit trail
+  hedera-key.js    key parsing verified against the ledger, not guessed
+  config.js        tier and asset selection
+public/index.html  the buyer's page. DOM nodes only, never innerHTML
+scripts/
+  go-live.js       creates escrow + buyer accounts and the evidence topic
+  prove-live.js    runs all three endings, then re-reads the mirror node for every id
+  attack.js        16 adversarial checks
+  regression.js    13 checks including deliberate fault injection
+  test-keys.js     10 key-handling checks, both key types x three formats
+  test-worker.js   10 worker checks that spend no provider quota
+  dryrun-hedera.js builds all 7 Hedera transactions offline
+  check-secrets.js audits permissions, git tracking and the whole of git history
+```
 
 ---
 

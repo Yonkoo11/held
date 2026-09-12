@@ -4,51 +4,54 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>OutcomeLock</title>
+<meta name="description" content="An agent service where your payment goes into escrow instead of to the seller, and only moves once you have read what you bought.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;450;500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Spline+Sans+Mono:wght@400;500&family=Spline+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   /* ── tokens ───────────────────────────────────────────────────────────────
-     Light-only. A payment under review is a financial record, and every other
-     tab at this event is a dark dashboard. One accent; every other surface is
-     an opacity derivative of the ink. Shadow philosophy: soft-elevation ladder. */
+     Light-only, on purpose. A payment under review is a financial record, and
+     every other tab at this event is a dark dashboard. One brand colour; every
+     other surface is an opacity derivative of the ink. Two meaning-only colours,
+     each used exactly once (paid / refunded). Soft-elevation ladder, always a
+     vertical offset, never a flat 1px box. */
   :root {
     --paper:      #faf8f4;
-    --paper-sunk: #f3f0e9;
+    --paper-sunk: #f2efe8;
     --surface:    #fffefb;
-    --surface-2:  #fffdf8;
 
-    --ink:    #17150f;
-    --ink-2:  rgba(23, 21, 15, 0.62);
-    --ink-3:  rgba(23, 21, 15, 0.40);
-    --ink-4:  rgba(23, 21, 15, 0.24);
+    --ink:   #17150f;
+    --ink-2: rgba(23, 21, 15, 0.62);
+    --ink-3: rgba(23, 21, 15, 0.40);
+    --ink-4: rgba(23, 21, 15, 0.22);
 
     --rule:        rgba(23, 21, 15, 0.10);
-    --rule-strong: rgba(23, 21, 15, 0.20);
+    --rule-strong: rgba(23, 21, 15, 0.22);
 
     --accent:      #b0431c;                    /* one brand colour, stamp red */
     --accent-soft: rgba(176, 67, 28, 0.10);
-    --accent-glow: rgba(176, 67, 28, 0.16);
+    --accent-ring: rgba(176, 67, 28, 0.24);
 
-    --paid:   #2f6b43;                         /* meaning only, used once */
-    --back:   #9a3527;                         /* meaning only, used once */
+    --on-accent: #fff8f5;                      /* text on the brand colour */
+    --paid: #2f6b43;                           /* meaning only */
+    --back: #9a3527;                           /* meaning only */
 
-    /* CF-1 — tokenised radius scale, varying by component role */
-    --r-sm: 4px;    /* controls */
-    --r-md: 9px;    /* panels  */
-    --r-lg: 16px;   /* the ask surface */
+    --r-sm: 4px;
+    --r-md: 9px;
+    --r-lg: 14px;
     --r-full: 999px;
 
-    /* CF-5 — soft-elevation ladder, layered, always vertical offset */
-    --lift-1: 0 1px 2px rgba(23,21,15,.05), 0 0 0 1px rgba(23,21,15,.04);
-    --lift-2: 0 2px 4px rgba(23,21,15,.05), 0 6px 16px -6px rgba(23,21,15,.10), 0 0 0 1px rgba(23,21,15,.05);
-    --lift-3: 0 4px 8px rgba(23,21,15,.06), 0 18px 36px -12px rgba(23,21,15,.16), 0 0 0 1px rgba(23,21,15,.06);
+    --lift-1: 0 1px 2px rgba(23,21,15,.05), 0 0 0 1px rgba(23,21,15,.05);
+    --lift-2: 0 2px 4px rgba(23,21,15,.05), 0 8px 18px -8px rgba(23,21,15,.14), 0 0 0 1px rgba(23,21,15,.06);
+    --lift-3: 0 4px 9px rgba(23,21,15,.07), 0 22px 44px -16px rgba(23,21,15,.20), 0 0 0 1px rgba(23,21,15,.07);
 
     --ease: cubic-bezier(0.23, 1, 0.32, 1);
 
-    --serif: 'Instrument Serif', 'Iowan Old Style', Georgia, 'Times New Roman', serif;
-    --sans:  'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-    --mono:  'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+    --serif: 'Fraunces', 'Iowan Old Style', Georgia, 'Times New Roman', serif;
+    --sans:  'Spline Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    --mono:  'Spline Sans Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+
+    --gut: clamp(20px, 4vw, 56px);             /* one gutter, every section */
   }
 
   * { box-sizing: border-box; }
@@ -57,239 +60,386 @@
     margin: 0;
     background: var(--paper);
     color: var(--ink);
-    font: 400 15px/1.55 var(--sans);
+    font: 400 15px/1.6 var(--sans);
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
-    /* layered ground, not a flat fill */
-    background-image:
-      radial-gradient(1100px 520px at 82% -8%, var(--accent-soft), transparent 62%),
-      radial-gradient(760px 420px at 4% 0%, rgba(23,21,15,.05), transparent 60%);
-    background-attachment: fixed;
+    -webkit-tap-highlight-color: transparent;
+    overflow-x: hidden;
   }
-  /* paper grain — keeps the ground from reading as a flat fill */
+  /* paper tooth. 4% is the difference between a surface and a flat fill. */
   body::before {
-    content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 0;
+    content: ''; position: fixed; inset: 0; z-index: 0; pointer-events: none;
     opacity: .035; mix-blend-mode: multiply;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E");
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+  ::selection { background: var(--accent-soft); }
+
+  .lab {                                       /* the only uppercase role */
+    font: 500 11px/1 var(--mono);
+    letter-spacing: .18em; text-transform: uppercase; color: var(--ink-3);
   }
 
-  .sheet { position: relative; z-index: 1; max-width: 1080px; margin: 0 auto; padding: 0 28px 120px; }
-
-  /* ── masthead ─────────────────────────────────────────────────────────── */
-  header { padding: 72px 0 0; }
-  .eyebrow {
-    font: 500 11px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase;
-    color: var(--ink-3); display: flex; align-items: center; gap: 10px;
+  /* ── nav: a data strip that floats over the diagram, not a bar ─────────── */
+  nav {
+    position: relative; z-index: 3;
+    display: flex; justify-content: space-between; align-items: center;
+    gap: 14px 22px; flex-wrap: wrap;
+    padding: 22px var(--gut) 0;
   }
-  .eyebrow b { color: var(--accent); font-weight: 500; }
-
-  h1 {
-    font: 400 clamp(38px, 5.6vw, 64px)/1.05 var(--serif);
-    letter-spacing: -0.022em;
-    margin: 20px 0 0;
-    max-width: 20ch;                      /* SR-6 — stops well before the edge */
-    text-wrap: balance;                   /* even line lengths instead of a long/short ladder */
+  nav .mark { font: 600 14px/1 var(--sans); letter-spacing: -0.02em; }
+  nav .net { display: inline-flex; align-items: center; gap: 7px; }
+  nav .net .pip {
+    width: 6px; height: 6px; border-radius: var(--r-full); background: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-soft);
   }
-  /* the emphasised phrase is one unit — letting "still / yours" break across lines reads as a
-     typo, not as emphasis */
-  h1 em { font-style: italic; color: var(--accent); white-space: nowrap; }
-  @media (max-width: 460px) { h1 em { white-space: normal; } }
+  nav .esc { color: var(--ink-3); }
+  nav .esc code { font: 500 11.5px/1 var(--mono); letter-spacing: 0; color: var(--ink-2); }
 
-  .standfirst {
+  /* ── stage: full-bleed. The mechanism is the layout. ──────────────────── */
+  .stage {
+    position: relative; z-index: 1;
+    min-height: 88vh;
+    display: flex; flex-direction: column; justify-content: center;
+    padding: clamp(40px, 6vw, 76px) 0 clamp(44px, 6vw, 72px);
+    background:
+      radial-gradient(900px 460px at 50% 54%, var(--accent-soft), transparent 66%),
+      radial-gradient(700px 380px at 8% 8%, rgba(23,21,15,.035), transparent 62%);
+  }
+
+  .lede { padding: 0 var(--gut); max-width: 46rem; }
+  .lede h1 {
+    margin: 14px 0 0;
+    font: 400 clamp(33px, 4.5vw, 58px)/1.04 var(--serif);
+    letter-spacing: -0.025em; text-wrap: balance;
+  }
+  .lede h1 em {
+    font-style: italic; color: var(--accent);
+    white-space: nowrap;                       /* keeps the accent phrase intact */
+  }
+  .lede p {
     margin: 18px 0 0; max-width: 54ch;
-    font-size: 16.5px; line-height: 1.6; color: var(--ink-2);
+    font: 400 clamp(15px, 1.35vw, 17px)/1.65 var(--sans); color: var(--ink-2);
+  }
+  .lede p b { color: var(--ink); font-weight: 500; }
+
+  /* ── the wire: YOU — ESCROW — SELLER, with the money parked in the middle ─ */
+  .wire { position: relative; margin-top: clamp(46px, 6.5vw, 88px); padding: 0 var(--gut); }
+  .rail { position: relative; height: 2px; }
+  .rail::after {                               /* the wire itself */
+    content: ''; position: absolute; left: 0; right: 0; top: 0; height: 2px; border-radius: 2px;
+    background: linear-gradient(90deg, transparent, var(--rule-strong) 6%, var(--rule-strong) 94%, transparent);
+  }
+  .seg {
+    position: absolute; top: 0; height: 2px; border-radius: 2px; z-index: 1;
+    background: var(--accent); opacity: 0;
+    transition: opacity 320ms var(--ease);
+  }
+  .seg-in  { left: 4%;  right: 50.4%; }
+  .wire[data-live="true"] .seg-in {
+    opacity: 1; box-shadow: 0 0 14px var(--accent-ring);
   }
 
-  .tiers { display: flex; flex-wrap: wrap; gap: 7px; margin: 26px 0 0; }
-  .chip {
-    font: 400 12px/1 var(--mono); letter-spacing: .04em;
-    padding: 7px 10px; border-radius: var(--r-sm);
-    background: var(--surface); color: var(--ink-3); box-shadow: var(--lift-1);
+  .node { position: absolute; top: 1px; transform: translateY(-50%); z-index: 2; }
+  .node i {
+    display: block; width: 10px; height: 10px; border-radius: var(--r-full);
+    background: var(--paper-sunk);
+    box-shadow: 0 0 0 1px var(--rule-strong), 0 0 0 7px var(--paper);
   }
-  .chip[data-degraded="true"] { color: var(--accent); background: var(--accent-soft); box-shadow: none; }
+  .node b {
+    position: absolute; top: 24px; white-space: nowrap;
+    font: 500 11px/1 var(--mono); letter-spacing: .18em; text-transform: uppercase;
+    color: var(--ink-3); font-weight: 500;
+  }
+  .n-you  { left: 4%; }        .n-you b  { left: 0; }
+  .n-them { right: 4%; }       .n-them b { right: 0; }
+  .wire[data-live="true"] .n-you i { background: var(--accent); box-shadow: 0 0 0 1px var(--accent), 0 0 0 7px var(--paper); }
 
-  /* ── the escrow statement: the product in one line ────────────────────── */
-  .statement {
-    margin: 44px 0 0; padding: 22px 24px;
-    background: var(--surface); border-radius: var(--r-md); box-shadow: var(--lift-2);
-    display: grid; grid-template-columns: 1fr auto; gap: 20px; align-items: center;
+  /* the pod is the signature element: the payment, visibly parked mid-wire */
+  .pod {
+    position: absolute; left: 50%; top: 1px; transform: translate(-50%, -50%); z-index: 3;
+    min-width: min(340px, 82vw); text-align: center;
+    padding: 20px 28px 18px;
+    background: linear-gradient(180deg, var(--surface), var(--paper-sunk));
+    border-radius: var(--r-lg);
+    box-shadow: var(--lift-3), 0 0 34px -6px var(--accent-ring);
   }
-  .statement .k { font: 500 10.5px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--ink-3); }
-  .statement .v { font: 400 15px/1.5 var(--sans); color: var(--ink); margin-top: 9px; }
-  .statement .v code {
-    font: 500 13.5px/1 var(--mono); background: var(--paper-sunk);
-    padding: 3px 6px; border-radius: var(--r-sm); color: var(--ink);
+  .pod .cap { font: 500 11px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--accent); }
+  .pod .cap code { font: inherit; letter-spacing: .06em; }
+  .pod .fig {
+    margin-top: 13px;
+    font: 400 clamp(38px, 4.8vw, 56px)/1 var(--mono);
+    letter-spacing: -0.05em; font-variant-numeric: tabular-nums;
   }
-  .statement .price { text-align: right; }
-  .statement .price .amt {
-    font: 400 30px/1 var(--mono); font-variant-numeric: tabular-nums; letter-spacing: -0.02em;
+  .pod .fig .u { font-size: .34em; letter-spacing: .02em; color: var(--ink-3); margin-left: .45em; }
+  .pod .clk {
+    margin-top: 15px; padding-top: 14px; border-top: 1px solid var(--rule);
+    display: flex; justify-content: center; align-items: baseline; gap: 10px; flex-wrap: wrap;
   }
-  .statement .price .per { font: 400 12px/1 var(--mono); color: var(--ink-3); margin-top: 7px; letter-spacing: .04em; }
+  .pod .clk .t {
+    font: 500 20px/1 var(--mono); letter-spacing: -0.02em; color: var(--accent);
+    font-variant-numeric: tabular-nums;
+  }
+  .wire[data-live="true"] .pod .clk .t { animation: breathe 2.8s var(--ease) infinite; }
+  @keyframes breathe { 0%, 100% { opacity: 1 } 50% { opacity: .55 } }
+  .pod .clk .c { font: 400 13px/1.3 var(--sans); color: var(--ink-3); }
+  [hidden] { display: none !important; }
 
-  /* ── ask ──────────────────────────────────────────────────────────────── */
-  .ask { margin: 18px 0 0; padding: 24px; background: var(--surface-2); border-radius: var(--r-lg); box-shadow: var(--lift-2); }
-  .ask label { display: block; font: 500 10.5px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--ink-3); }
-  textarea {
-    width: 100%; margin-top: 12px; min-height: 76px; resize: vertical;
-    padding: 13px 14px; font: 400 16px/1.55 var(--sans); color: var(--ink);
+  .verdict {
+    margin: clamp(56px, 7.5vw, 104px) auto 0; padding: 0 var(--gut); max-width: 50rem;
+    text-align: center; text-wrap: balance;
+    font: 400 clamp(16px, 1.6vw, 20px)/1.5 var(--sans); color: var(--ink-2);
+  }
+  .verdict b { color: var(--ink); font-weight: 600; }
+  .verdict em { font-style: normal; color: var(--accent); font-weight: 500; }
+
+  /* ── the ask: the one contained section, and the only elevated surface ──── */
+  .deal { position: relative; z-index: 1; padding: 0 var(--gut) clamp(56px, 7vw, 92px); }
+  .deal .box {
+    max-width: 62rem; margin: 0 auto; padding: clamp(20px, 2.4vw, 28px);
+    background: var(--surface); border-radius: var(--r-lg); box-shadow: var(--lift-2);
+  }
+  .deal label { display: block; margin-bottom: 11px; }
+  .deal textarea {
+    width: 100%; min-height: 92px; resize: vertical;
     background: var(--paper); border: 0; border-radius: var(--r-md);
-    box-shadow: inset 0 0 0 1px var(--rule); transition: box-shadow 180ms var(--ease);
+    padding: 15px 16px; color: var(--ink);
+    font: 400 16px/1.55 var(--sans);           /* 16px: no iOS zoom */
+    box-shadow: inset 0 0 0 1px var(--rule), inset 0 1px 2px rgba(23,21,15,.04);
+    transition: box-shadow 180ms var(--ease);
   }
-  textarea::placeholder { color: var(--ink-4); }
-  textarea:hover { box-shadow: inset 0 0 0 1px var(--rule-strong); }
-  textarea:focus { outline: 0; box-shadow: inset 0 0 0 1px var(--accent), 0 0 0 3px var(--accent-glow); }
-
-  .askrow { display: flex; align-items: center; gap: 14px; margin-top: 14px; flex-wrap: wrap; }
+  .deal textarea::placeholder { color: var(--ink-3); }
+  .deal textarea:focus {
+    outline: 0;
+    box-shadow: inset 0 0 0 1px var(--accent), 0 0 0 3px var(--accent-ring);
+  }
+  .askrow { margin-top: 14px; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  .hint { font: 400 13.5px/1.4 var(--sans); color: var(--ink-3); }
 
   button {
-    font: 500 14px/1 var(--sans); letter-spacing: -0.005em;
-    padding: 12px 18px; min-height: 44px; border: 0; border-radius: var(--r-sm);
-    background: var(--ink); color: var(--paper); cursor: pointer;
-    box-shadow: var(--lift-2);
+    font-family: var(--sans); cursor: pointer; border: 0;
     transition: transform 160ms var(--ease), box-shadow 160ms var(--ease), background 160ms var(--ease);
-    -webkit-tap-highlight-color: rgba(0,0,0,0);
+  }
+  button:focus-visible { outline: 0; box-shadow: 0 0 0 3px var(--accent-ring); }
+  button:disabled { cursor: not-allowed; opacity: .55; transform: none; }
+
+  .primary {
+    background: var(--accent); color: var(--on-accent);
+    border-radius: var(--r-md); padding: 0 22px; min-height: 48px;
+    font-size: 14.5px; font-weight: 600; letter-spacing: -0.01em;
+    box-shadow: 0 1px 2px rgba(23,21,15,.14), 0 10px 24px -12px var(--accent);
   }
   @media (hover: hover) {
-    button:hover { transform: translateY(-1px); box-shadow: var(--lift-3); }
-    button.ghost:hover { background: var(--paper-sunk); transform: translateY(-1px); box-shadow: var(--lift-2); }
+    .primary:not(:disabled):hover {
+      transform: translateY(-1px);
+      box-shadow: 0 3px 6px rgba(23,21,15,.16), 0 16px 32px -12px var(--accent);
+    }
   }
-  button:active { transform: translateY(0) scale(.978); transition-duration: 80ms; box-shadow: var(--lift-1); }
-  button:focus-visible { outline: 0; box-shadow: var(--lift-2), 0 0 0 3px var(--accent-glow); }
-  button[disabled] { opacity: .45; cursor: default; transform: none; box-shadow: var(--lift-1); }
-  button.primary { background: var(--accent); box-shadow: var(--lift-2), 0 0 24px -6px var(--accent-glow); }
-  button.ghost { background: var(--surface); color: var(--ink); box-shadow: var(--lift-1); }
+  .primary:not(:disabled):active { transform: translateY(0) scale(.98); transition-duration: 80ms; }
 
-  .hint { font: 400 12.5px/1.5 var(--mono); color: var(--ink-3); }
-  .err { margin-top: 12px; font-size: 13.5px; color: var(--back); }
-
-  /* ── the ledger: hairline rows, no cards ──────────────────────────────── */
-  .ledger { margin: 56px 0 0; }
-  .ledger > .k {
-    font: 500 10.5px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase;
-    color: var(--ink-3); padding-bottom: 14px; border-bottom: 1px solid var(--rule-strong);
-    display: flex; justify-content: space-between;
+  .err {
+    margin-top: 14px; padding: 12px 14px; border-radius: var(--r-md);
+    background: rgba(154,53,39,.07); color: var(--back);
+    font: 400 13.5px/1.5 var(--sans);
+    box-shadow: inset 0 0 0 1px rgba(154,53,39,.18);
   }
 
-  .row { padding: 26px 0; border-bottom: 1px solid var(--rule); }
-  .rowhead { display: grid; grid-template-columns: 1fr auto; gap: 28px; align-items: start; }
-  .q { font: 400 19px/1.4 var(--sans); letter-spacing: -0.01em; max-width: 46ch; }
-
-  /* SR-3 — the right edge. Metadata aligned to a shared axis makes a second
-     vertical line, which is what gives the list structure without boxes. */
-  .edge { text-align: right; display: flex; flex-direction: column; align-items: flex-end; gap: 9px; min-width: 172px; }
-  .state {
-    font: 500 10px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase;
-    padding: 6px 9px; border-radius: var(--r-full);
+  /* ── the register: numbered entries with hanging rules. Not cards. ─────── */
+  .register { position: relative; z-index: 1; padding: 0 var(--gut) clamp(40px, 5vw, 64px); }
+  .reghead {
+    display: flex; justify-content: space-between; align-items: baseline; gap: 16px;
+    padding-bottom: 14px; border-bottom: 2px solid var(--ink);
   }
-  .state[data-s="held"]     { color: var(--accent); background: var(--accent-soft); }
-  .state[data-s="released"] { color: var(--paid);   background: rgba(47,107,67,.10); }
-  .state[data-s="refunded"] { color: var(--back);   background: rgba(154,53,39,.10); }
-  .state[data-s="settling"] { color: var(--ink-3);  background: var(--paper-sunk); }
-  .amt { font: 400 17px/1 var(--mono); font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
 
-  /* signature element — the clock. The one thing that moves on its own, and the
-     one fact people get wrong: silence pays the SELLER. */
-  .clock { text-align: right; }
-  .clock .t {
-    font: 400 27px/1 var(--mono); font-variant-numeric: tabular-nums;
-    letter-spacing: -0.03em; color: var(--accent);
+  .row {
+    display: grid; grid-template-columns: 3.2rem minmax(0, 1fr) 13.5rem;
+    gap: 0 clamp(18px, 2.4vw, 34px);
+    padding: 26px 0; border-bottom: 1px solid var(--rule);
   }
-  .clock .lab { font: 400 12px/1.4 var(--mono); letter-spacing: .02em; color: var(--ink-3); margin-top: 6px; white-space: nowrap; }
-  .clock[data-live="true"] .t { animation: tick 2s var(--ease) infinite; }
-  @keyframes tick { 0%, 100% { opacity: 1; } 50% { opacity: .62; } }
-
-  .deliverable {
-    position: relative; margin: 20px 0 0; padding: 20px 22px;
-    background: var(--surface); border-radius: var(--r-md); box-shadow: var(--lift-1);
-    word-break: break-word;
-    font: 400 14.5px/1.68 var(--sans); color: var(--ink); max-width: 72ch;
+  .no {
+    font: 400 13px/1.7 var(--mono); color: var(--ink-4);
+    font-variant-numeric: tabular-nums;
   }
-  .deliverable p { margin: 0 0 0.85em; }
+  .q { font: 500 19px/1.36 var(--serif); letter-spacing: -0.012em; }
+  .deliverable { margin-top: 11px; color: var(--ink-2); }
+  .deliverable p { margin: 0 0 .52em; font: 400 15px/1.66 var(--sans); }
   .deliverable p:last-child { margin-bottom: 0; }
-  .deliverable strong { font-weight: 500; }
-  .deliverable code { font: 400 13.5px/1 var(--mono); background: var(--paper-sunk); padding: 2px 5px; border-radius: var(--r-sm); }
-  .deliverable.clamped { max-height: 168px; overflow: hidden; }
-  .deliverable.clamped::after {
-    content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 72px;
-    background: linear-gradient(to bottom, rgba(255,254,251,0), var(--surface));
-    border-radius: 0 0 var(--r-md) var(--r-md); pointer-events: none;
+  .deliverable strong { color: var(--ink); font-weight: 500; }
+  .deliverable code {
+    font: 400 13.5px/1 var(--mono); background: var(--paper-sunk);
+    padding: 2px 5px; border-radius: var(--r-sm);
   }
-  button.more {
-    margin-top: -14px; margin-left: 22px; position: relative; z-index: 2;
-    padding: 7px 12px; min-height: 0;
-    font: 500 12px/1 var(--mono); letter-spacing: .06em;
-    background: transparent; color: var(--ink-2); box-shadow: inset 0 0 0 1px var(--rule);
+  .deliverable.clamped {
+    display: -webkit-box; -webkit-line-clamp: 6; -webkit-box-orient: vertical; overflow: hidden;
   }
-  @media (hover: hover) { button.more:hover { color: var(--ink); box-shadow: inset 0 0 0 1px var(--rule-strong); transform: translateY(-1px); } }
-  .byline { margin-top: 11px; font: 400 12px/1.5 var(--mono); color: var(--ink-3); }
-  .decide { display: flex; gap: 9px; margin-top: 16px; flex-wrap: wrap; }
-  .outcome { margin-top: 14px; font: 400 12.5px/1.6 var(--mono); color: var(--ink-3); word-break: break-all; }
+  .more {
+    margin-top: 9px; background: none; padding: 6px 0; min-height: 32px;
+    font: 500 13px/1 var(--sans); color: var(--accent);
+    border-bottom: 1px solid var(--accent-ring);
+  }
+  .byline {
+    margin-top: 14px; font: 400 12.5px/1.5 var(--mono); color: var(--ink-3);
+    word-break: break-word;
+  }
+  .trail { margin-top: 10px; display: flex; gap: 7px 16px; flex-wrap: wrap; }
+  .trail span { font: 400 12px/1.5 var(--mono); color: var(--ink-4); }
+  .trail b { font-weight: 500; color: var(--ink-3); }
 
-  .trail { margin-top: 16px; display: flex; flex-wrap: wrap; gap: 0 18px; }
-  .trail span { font: 400 12px/1.9 var(--mono); color: var(--ink-4); }
-  .trail span b { color: var(--ink-3); font-weight: 500; }
+  .edge { text-align: right; }
+  .amt {
+    font: 400 17px/1 var(--mono); letter-spacing: -0.02em; font-variant-numeric: tabular-nums;
+  }
+  .state {
+    display: block; margin-top: 10px;
+    font: 500 11px/1 var(--mono); letter-spacing: .16em; text-transform: uppercase;
+  }
+  .state[data-s="held"]     { color: var(--accent); }
+  .state[data-s="released"] { color: var(--paid); }
+  .state[data-s="refunded"] { color: var(--back); }
+  .clock { margin-top: 14px; }
+  .clock .t {
+    font: 500 26px/1 var(--mono); letter-spacing: -0.03em; color: var(--accent);
+    font-variant-numeric: tabular-nums;
+  }
+  .clock .c { margin-top: 6px; font: 400 12.5px/1.35 var(--sans); color: var(--ink-3); }
 
-  .empty { padding: 36px 0; color: var(--ink-3); font-size: 14.5px; }
+  /* At 13.5rem the two buttons can never sit side by side, so stack them to a clean edge
+     rather than letting them wrap into a ragged pair. */
+  .decide { margin-top: 16px; display: flex; flex-direction: column; gap: 8px; align-items: stretch; }
+  .decide button {
+    background: var(--accent); color: var(--on-accent);
+    border-radius: var(--r-md); padding: 0 14px; min-height: 44px;
+    font-size: 13px; font-weight: 600;
+    box-shadow: 0 1px 2px rgba(23,21,15,.14), 0 8px 18px -10px var(--accent);
+  }
+  .decide button.ghost {
+    background: var(--surface); color: var(--ink); font-weight: 500;
+    box-shadow: inset 0 0 0 1px var(--rule), 0 1px 2px rgba(23,21,15,.05);
+  }
+  @media (hover: hover) {
+    .decide button:not(:disabled):hover { transform: translateY(-1px); }
+    .decide button.ghost:not(:disabled):hover { box-shadow: inset 0 0 0 1px var(--rule-strong), 0 4px 10px rgba(23,21,15,.08); }
+  }
+  .decide button:not(:disabled):active { transform: translateY(0) scale(.98); transition-duration: 80ms; }
+  /* once the ledger column goes full width the pair fits side by side again */
+  @media (max-width: 900px) {
+    .decide { flex-direction: row; flex-wrap: wrap; align-items: center; }
+    .decide button { padding: 0 18px; }
+  }
+  .outcome {
+    margin-top: 12px; font: 400 12.5px/1.55 var(--mono); color: var(--ink-3);
+    overflow-wrap: anywhere;
+  }
+  .edge .outcome { margin-top: 13px; }
 
-  footer { margin-top: 64px; padding-top: 22px; border-top: 1px solid var(--rule); }
-  footer p { margin: 0; font: 400 12px/1.7 var(--mono); color: var(--ink-4); max-width: 70ch; word-break: break-word; }
-
-  @media (max-width: 720px) {
-    .sheet { padding: 0 20px 88px; }
-    header { padding-top: 48px; }
-    .statement { grid-template-columns: 1fr; gap: 18px; }
-    .statement .price { text-align: left; }
-    .rowhead { grid-template-columns: 1fr; gap: 16px; }
-    .edge { min-width: 0; flex-direction: row; flex-wrap: wrap; align-items: center; text-align: left; gap: 12px; }
-    .clock { text-align: left; }
-    .clock .lab { max-width: none; }
+  .empty {
+    margin: 0; padding: 40px 0 4px; max-width: 40ch;
+    font: 400 15.5px/1.6 var(--sans); color: var(--ink-3);
   }
 
+  /* ── footer: full-bleed sunk strip, a different treatment again ────────── */
+  footer {
+    position: relative; z-index: 1;
+    margin-top: clamp(30px, 4vw, 52px); padding: 30px var(--gut) 40px;
+    background: var(--paper-sunk); box-shadow: inset 0 1px 0 var(--rule);
+  }
+  .tiers { display: flex; gap: 8px; flex-wrap: wrap; }
+  .chip {
+    padding: 7px 11px; border-radius: var(--r-full);
+    background: var(--surface); box-shadow: var(--lift-1);
+    font: 400 12.5px/1 var(--mono); color: var(--ink-2);
+  }
+  .chip[data-degraded="true"] { color: var(--ink-3); background: transparent; box-shadow: inset 0 0 0 1px var(--rule); }
+  footer p {
+    margin: 16px 0 0; font: 400 12px/1.7 var(--mono); color: var(--ink-4); word-break: break-word;
+  }
+
+  /* ── responsive ───────────────────────────────────────────────────────── */
+  @media (max-width: 900px) {
+    .row { grid-template-columns: 2.6rem minmax(0, 1fr); }
+    .edge { grid-column: 2; text-align: left; margin-top: 16px;
+            padding-top: 14px; border-top: 1px solid var(--rule); }
+    .clock .t { font-size: 22px; }
+  }
+  @media (max-width: 700px) {
+    .stage { min-height: 0; padding-top: 34px; }
+    .lede h1 em { white-space: normal; }
+    .wire { margin-top: 40px; }
+    .rail { height: auto; }                  /* let the in-flow pod set the height */
+    .pod { position: relative; left: auto; top: auto; transform: none;
+           margin: 46px auto 0; width: 100%; min-width: 0; }
+    .seg-in { right: 50%; }
+    .node b { font-size: 10px; letter-spacing: .14em; }
+    .verdict { margin-top: 40px; text-align: left; }
+    .row { grid-template-columns: minmax(0, 1fr); }
+    .no { margin-bottom: 8px; }
+    .edge { grid-column: 1; }
+  }
   @media (prefers-reduced-motion: reduce) {
-    * { animation: none !important; transition-duration: 1ms !important; }
+    *, *::before, *::after { animation: none !important; transition-duration: 1ms !important; }
   }
 </style>
 </head>
 <body>
-<div class="sheet">
-  <header>
-    <div class="eyebrow"><b>&#9679;</b> <span id="net">hedera testnet</span> &middot; x402 via Blocky402</div>
+
+<nav>
+  <span class="mark">OutcomeLock</span>
+  <span class="lab net"><span class="pip"></span><span id="net">hedera testnet</span> · x402 via Blocky402</span>
+  <span class="lab esc">escrow <code id="escrow">…</code></span>
+</nav>
+
+<header class="stage">
+  <div class="lede">
+    <div class="lab">Where your payment actually goes</div>
     <h1>You paid for this. The money is <em>still yours</em> until you have read it.</h1>
-    <p class="standfirst">An agent service where the payment goes into escrow instead of to the seller.
-      Approve and they are paid. Reject and you are refunded. Say nothing and the deadline pays them —
-      the opposite of a card authorisation, and the point.</p>
-    <div class="tiers" id="tiers"></div>
-  </header>
+    <p>The 402 quote names an escrow account as its <b>payTo</b>, not the seller's. You get the
+      deliverable straight away. The payment stays where you can see it.</p>
+  </div>
 
-  <section class="statement">
-    <div>
-      <div class="k">Where your payment goes</div>
-      <div class="v">Not to the seller &mdash; to escrow account <code id="escrow">&hellip;</code>
-        which the 402 quote names as its <code>payTo</code></div>
+  <div class="wire" id="wire" data-live="false">
+    <div class="rail">
+      <span class="seg seg-in"></span>
+      <div class="node n-you"><i></i><b>you</b></div>
+      <div class="node n-them"><i></i><b>the seller</b></div>
+      <div class="pod">
+        <div class="cap">held in escrow · <code id="escrow2">…</code></div>
+        <div class="fig"><span id="price">—</span><span class="u" id="unit"></span></div>
+        <div class="clk">
+          <span class="t" id="wclock">—:—</span>
+          <span class="c" id="wnote">nothing in flight</span>
+        </div>
+      </div>
     </div>
-    <div class="price">
-      <div class="amt" id="price">&mdash;</div>
-      <div class="per">per request</div>
-    </div>
-  </section>
+  </div>
 
-  <section class="ask">
-    <label for="q">Ask the agent something</label>
+  <p class="verdict">Approve and it goes right. Reject and it comes back left. Say nothing and
+    <em>it still goes right</em> — a Hedera scheduled transaction, armed the moment you paid.
+    <b>A card authorisation expires backwards. This one expires forwards.</b></p>
+</header>
+
+<section class="deal">
+  <div class="box">
+    <label class="lab" for="q">Ask the agent something</label>
     <textarea id="q" placeholder="What is a Hedera scheduled transaction and when does it execute?"></textarea>
     <div class="askrow">
       <button class="primary" id="go">Pay and ask</button>
       <span class="hint" id="hint"></span>
     </div>
     <div class="err" id="err" hidden></div>
-  </section>
+  </div>
+</section>
 
-  <section class="ledger">
-    <div class="k"><span>Jobs</span><span id="count"></span></div>
-    <div id="jobs"><p class="empty">Nothing yet. Ask the agent something and watch the clock start.</p></div>
-  </section>
+<section class="register">
+  <div class="reghead">
+    <span class="lab">Register</span>
+    <span class="lab" id="count"></span>
+  </div>
+  <div id="jobs"><p class="empty">Nothing yet. Ask the agent something and watch the wire go live.</p></div>
+</section>
 
-  <footer><p id="foot"></p></footer>
-</div>
+<footer>
+  <div class="tiers" id="tiers"></div>
+  <p id="foot"></p>
+</footer>
 
 <script>
 const $ = (id) => document.getElementById(id);
@@ -344,7 +494,9 @@ function prose(text) {
 async function loadHealth() {
   const h = await (await fetch('/health')).json();
   $('escrow').textContent = h.escrow;
-  $('price').textContent = `${h.price} ${h.asset.symbol}`;
+  $('escrow2').textContent = h.escrow;
+  $('price').textContent = h.price;
+  $('unit').textContent = h.asset.symbol;
   $('net').textContent = h.tiers.settlement.degraded ? 'local stand-in' : 'hedera testnet';
   $('hint').textContent = `${h.price} ${h.asset.symbol}, held until you decide`;
   const box = $('tiers');
@@ -362,50 +514,71 @@ function countdown(ms) {
   return `${m}:${String(s).padStart(2, '0')}`;
 }
 
-function jobNode(j) {
+/* The wire above the fold reads off the soonest open job. With nothing held it still draws —
+   the diagram is the explanation, so it must not depend on there being a payment in flight. */
+let soonestDeadline = null;
+function paintWire() {
+  const wire = $('wire');
+  if (soonestDeadline === null) {
+    wire.dataset.live = 'false';
+    $('wclock').hidden = true;
+    $('wnote').textContent = 'per request · nothing in flight yet';
+    return;
+  }
+  wire.dataset.live = 'true';
+  $('wclock').hidden = false;
+  $('wclock').textContent = countdown(soonestDeadline - Date.now());
+  $('wnote').textContent = 'then it pays the seller';
+}
+
+function jobNode(j, entryNo) {
   const mine = Boolean(readTokens()[j.id]);
   const held = j.state === 'held';
 
-  const edge = el('div', { class: 'edge' }, [
+  const edgeParts = [
+    el('div', { class: 'amt', text: `${j.amountDisplay} ${j.assetSymbol || ''}`.trim() }),
     el('span', { class: 'state', 'data-s': j.state, text: j.state }),
-    el('span', { class: 'amt', text: `${j.amountDisplay} ${j.assetSymbol || ''}` }),
-  ]);
+  ];
   if (held) {
-    edge.appendChild(el('div', { class: 'clock', 'data-live': 'true', 'data-deadline': String(j.deadline) }, [
+    edgeParts.push(el('div', { class: 'clock', 'data-deadline': String(j.deadline) }, [
       el('div', { class: 't', text: countdown(j.deadline - Date.now()) }),
-      el('div', { class: 'lab', text: 'then it pays the seller' }),
+      el('div', { class: 'c', text: 'then it pays the seller' }),
     ]));
   }
-
-  const parts = [
-    el('div', { class: 'rowhead' }, [el('div', { class: 'q', text: j.question }), edge]),
-    (() => {
-      const d = el('div', { class: 'deliverable' });
-      d.appendChild(prose(j.deliverable));
-      if ((j.deliverable || '').length > 620) {
-        d.classList.add('clamped');
-        const more = el('button', { class: 'more', type: 'button', text: 'Read all' });
-        more.addEventListener('click', () => {
-          const open = d.classList.toggle('clamped');
-          more.textContent = open ? 'Read all' : 'Show less';
-        });
-        return el('div', {}, [d, more]);
-      }
-      return d;
-    })(),
-    el('div', { class: 'byline', text: `${j.workerTier || ''} · ${j.model || ''} · ${j.agentVersion || ''}` }),
-  ];
-
   if (held && mine) {
-    parts.push(el('div', { class: 'decide' }, [
-      el('button', { 'data-act': 'approve', 'data-id': j.id, text: 'Approve — pay the seller' }),
+    edgeParts.push(el('div', { class: 'decide' }, [
       el('button', { class: 'ghost', 'data-act': 'reject', 'data-id': j.id, text: 'Reject — refund me' }),
+      el('button', { 'data-act': 'approve', 'data-id': j.id, text: 'Approve — pay the seller' }),
     ]));
   } else if (held) {
-    parts.push(el('div', { class: 'outcome', text: 'paid for in another browser — only the buyer who paid can decide' }));
+    edgeParts.push(el('div', { class: 'outcome', text: 'paid for in another browser' }));
+  }
+
+  const bodyParts = [el('div', { class: 'q', text: j.question })];
+  const d = el('div', { class: 'deliverable' });
+  d.appendChild(prose(j.deliverable));
+  if ((j.deliverable || '').length > 620) {
+    d.classList.add('clamped');
+    const more = el('button', { class: 'more', type: 'button', text: 'Read all' });
+    more.addEventListener('click', () => {
+      const stillClamped = d.classList.toggle('clamped');
+      more.textContent = stillClamped ? 'Read all' : 'Show less';
+    });
+    bodyParts.push(d, more);
   } else {
+    bodyParts.push(d);
+  }
+  bodyParts.push(el('div', {
+    class: 'byline',
+    text: [j.workerTier, j.model, j.agentVersion].filter((x) => x && x !== 'none').join(' · '),
+  }));
+  if (!held) {
+    // The reason and the transaction id are part of the record of this entry, so they read at full
+    // width in the body — not squeezed into the right-hand ledger column where an id wraps mid-token.
     const tail = [j.decisionReason, j.decisionTx].filter(Boolean).join('  ·  ');
-    if (tail) parts.push(el('div', { class: 'outcome', text: tail }));
+    if (tail) bodyParts.push(el('div', { class: 'outcome', text: tail }));
+  } else if (!mine) {
+    bodyParts.push(el('div', { class: 'outcome', text: 'only the buyer who paid for this can decide on it' }));
   }
 
   const trail = el('div', { class: 'trail' });
@@ -415,22 +588,37 @@ function jobNode(j) {
       document.createTextNode(' ' + new Date(e.at).toLocaleTimeString()),
     ]));
   }
-  parts.push(trail);
-  return el('div', { class: 'row' }, parts);
+  bodyParts.push(trail);
+
+  return el('div', { class: 'row' }, [
+    el('div', { class: 'no', text: String(entryNo).padStart(3, '0') }),
+    el('div', {}, bodyParts),
+    el('div', { class: 'edge' }, edgeParts),
+  ]);
 }
 
 async function loadJobs() {
   const list = await (await fetch('/jobs')).json();
   const box = $('jobs');
-  $('count').textContent = list.length ? `${list.length} total` : '';
+  const open = list.filter((j) => j.state === 'held').length;
+  $('count').textContent = list.length
+    ? `${list.length} ${list.length === 1 ? 'entry' : 'entries'} · ${open} open`
+    : '';
   if (!list.length) {
+    soonestDeadline = null; paintWire();
     clear(box);
-    box.appendChild(el('p', { class: 'empty', text: 'Nothing yet. Ask the agent something and watch the clock start.' }));
+    box.appendChild(el('p', { class: 'empty', text: 'Nothing yet. Ask the agent something and watch the wire go live.' }));
     return;
   }
-  const full = await Promise.all(list.slice(0, 8).map((j) => fetch(`/jobs/${encodeURIComponent(j.id)}`).then((r) => r.json())));
+  const shown = list.slice(0, 8);
+  const full = await Promise.all(shown.map((j) => fetch(`/jobs/${encodeURIComponent(j.id)}`).then((r) => r.json())));
+
+  const deadlines = full.filter((j) => j.state === 'held').map((j) => j.deadline);
+  soonestDeadline = deadlines.length ? Math.min(...deadlines) : null;
+  paintWire();
+
   clear(box);
-  for (const j of full) box.appendChild(jobNode(j));
+  full.forEach((j, i) => box.appendChild(jobNode(j, list.length - i)));
 }
 
 $('go').addEventListener('click', async () => {
@@ -479,6 +667,7 @@ setInterval(() => {
     const t = c.querySelector('.t');
     if (t) t.textContent = countdown(Number(c.dataset.deadline) - Date.now());
   });
+  if (soonestDeadline !== null) $('wclock').textContent = countdown(soonestDeadline - Date.now());
 }, 1000);
 setInterval(loadJobs, 6000);
 

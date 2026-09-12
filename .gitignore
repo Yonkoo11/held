@@ -6,3 +6,5 @@ ai/
 
 .live-url
 data-test/
+proposals/
+var/

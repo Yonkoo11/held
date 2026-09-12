@@ -1,4 +1,9 @@
-# OutcomeLock
+# OutcomeLock → **Held** (renamed 2026-09-12, rename not yet applied)
+
+The product name is now **Held**: the money is paid, but held until the buyer has looked. The
+rename across README, package.json, the page, the scripts, DEMO-SCRIPT.md and SUBMISSION.md must
+land before the repo is published and before the video is recorded. Until it does, this file and
+the rest of the repo still say OutcomeLock.
 
 Escrowed settlement for agent work. An x402-gated service takes payment up front, but the money
 lands in escrow instead of the seller's pocket, and is only released once the buyer has looked at

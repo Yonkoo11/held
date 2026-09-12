@@ -139,7 +139,7 @@ async function main() {
     broken.kill();
   } finally {
     try { seller.kill(); } catch {}
-    if (fail) fs.writeFileSync('/tmp/regression-seller.log', log);
+    fs.writeFileSync('/tmp/regression-seller.log', log);   // always: a thrown request needs it most
   }
 
   console.log(`\n${pass} passed, ${fail} failed\n`);

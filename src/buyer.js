@@ -36,7 +36,7 @@ async function ask(question) {
   }
   const required = await first.json();
   const accepted = required.accepts[0];
-  const lock = required.extensions?.outcomelock;
+  const lock = required.extensions?.held;
   console.log(`[buyer] 402 payment required`);
   console.log(`         price     ${Number(accepted.amount) / 10 ** payAsset().decimals} ${payAsset().symbol} (asset ${accepted.asset})`);
   console.log(`         network   ${accepted.network}`);

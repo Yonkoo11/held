@@ -1,4 +1,4 @@
-# DEMO-FOOTGUNS — OutcomeLock
+# DEMO-FOOTGUNS — Held
 
 Rehearsed 2026-09-12 by walking the filming sequence against the live deploy and **timing every
 step**. No conductor state files exist for this project (it was not built through that pipeline), so

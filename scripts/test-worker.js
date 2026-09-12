@@ -40,7 +40,7 @@ ranDeterministic
       ? ok(`a real model run reports its model (${r.model})`)
       : no('a model run reports no model'));
 
-ranDeterministic && !r.output.includes('DETERMINISTIC WORKER')
+ranDeterministic && !/no model ran/i.test(r.output)
   ? no('the deterministic output does not say so in its own text')
   : ok('the output itself states when no model ran');
 
@@ -50,7 +50,7 @@ r.failedOver
       : ok('the failover reason carries nothing secret-shaped'))
   : ok('no failover this run');
 
-agentVersion().id.startsWith('outcomelock-worker:')
+agentVersion().id.startsWith('held-worker:')
   ? ok('the agent version id is well formed') : no('bad agent version id');
 
 console.log(`\n${pass} passed, ${fail} failed\n`);

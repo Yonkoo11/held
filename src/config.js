@@ -32,10 +32,10 @@ const env = (k) => {
 export function settlementTier() {
   if (env('HEDERA_OPERATOR_ID') && env('HEDERA_OPERATOR_KEY')) {
     return { name: 'hedera-testnet', degraded: false,
-             label: `Hedera testnet — real ${payAsset().symbol}, real escrow account` };
+             label: `Hedera testnet, real ${payAsset().symbol} in a real escrow account` };
   }
   return { name: 'local-standin', degraded: true,
-           label: 'LOCAL SIMULATION — NOT HEDERA TESTNET' };
+           label: 'local simulation, not Hedera testnet' };
 }
 
 // Evidence tier: HCS topic if we can reach the network with a key, otherwise an append-only file.
@@ -44,7 +44,7 @@ export function evidenceTier() {
     return { name: 'hcs', degraded: false, label: 'Hedera Consensus Service topic' };
   }
   return { name: 'file', degraded: true,
-           label: 'LOCAL APPEND-ONLY FILE — NOT HCS' };
+           label: 'local append-only file, not HCS' };
 }
 
 // Worker tiers, in priority order. Every tier whose credential is present is a candidate, and the
@@ -61,7 +61,7 @@ const WORKER_TIERS = [
 export function workerTiers() {
   const available = WORKER_TIERS.filter((t) => env(t.key)).map(({ key, ...rest }) => rest);
   return [...available, { name: 'deterministic', degraded: true,
-                          label: 'DETERMINISTIC WORKER — NO MODEL' }];
+                          label: 'deterministic responder, no model' }];
 }
 
 /** The tier we would try first. Used for display; doWork() may end up lower down. */

@@ -1,4 +1,4 @@
-# OutcomeLock — ETHOnline 2026 submission draft
+# Held — ETHOnline 2026 submission draft
 
 Status: **DRAFT — NOT FILED.**
 Deadline: 2026-09-13 12:00 EDT / 17:00 WAT.
@@ -31,7 +31,7 @@ Not implemented: A2A negotiation, UCP discovery, HTS custom fees.
 
 ## Name
 
-OutcomeLock
+Held
 
 ## One-liner
 
@@ -44,7 +44,7 @@ x402 pays the seller the instant a request is served. For a weather API that is 
 work it is backwards — you only discover whether you got anything useful *after* the money has
 gone, and your only recourse is a support email.
 
-OutcomeLock keeps the x402 flow exactly as it is, and changes one field: `payTo` points at an
+Held keeps the x402 flow exactly as it is, and changes one field: `payTo` points at an
 escrow account rather than at the seller. The buyer pays, gets the deliverable immediately, and
 then decides. Approve and the seller is paid. Reject and the buyer is refunded. Say nothing and a
 Hedera scheduled transaction pays the seller when the review window expires — so silence is not a

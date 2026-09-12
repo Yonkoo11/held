@@ -1,7 +1,7 @@
 // The agent that actually does the paid work. Four tiers, highest available wins, and the tier is
 // stamped on the deliverable so nobody has to guess which one ran.
 //
-// The version id is the part that matters for OutcomeLock: it is a hash of the prompt template,
+// The version id is the part that matters for Held: it is a hash of the prompt template,
 // the model name and this file's own source. Change any of them and the id changes, so "which
 // version of the agent produced this" is a checkable fact rather than a claim.
 import fs from 'node:fs';
@@ -68,7 +68,7 @@ export function agentVersion(tierName) {
   const id = crypto.createHash('sha256')
     .update(PROMPT_TEMPLATE).update(MODELS[tier.name] || 'none').update(src)
     .digest('hex').slice(0, 16);
-  return { id: `outcomelock-worker:${id}`, tier: tier.name,
+  return { id: `held-worker:${id}`, tier: tier.name,
            model: MODELS[tier.name] || 'none', degraded: tier.degraded };
 }
 
@@ -213,7 +213,7 @@ async function runOllama(question) {
 function runDeterministic(question) {
   const words = question.trim().split(/\s+/).filter(Boolean);
   return [
-    'DETERMINISTIC WORKER — NO MODEL RAN.',
+    'No model ran for this request.',
     '',
     `Question received: ${question.trim()}`,
     `Length: ${words.length} words.`,

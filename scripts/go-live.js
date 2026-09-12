@@ -1,4 +1,4 @@
-// One command that takes OutcomeLock from the local stand-in onto real Hedera testnet.
+// One command that takes Held from the local stand-in onto real Hedera testnet.
 //
 //   1. create a testnet account at https://portal.hedera.com/register  (the only human step)
 //   2. put HEDERA_OPERATOR_ID and HEDERA_OPERATOR_KEY in your environment file
@@ -80,7 +80,7 @@ async function main() {
   const buyer = await createAccount('buyer account');
 
   const topicRx = await (await new TopicCreateTransaction()
-    .setTopicMemo('OutcomeLock evidence trail')
+    .setTopicMemo('Held evidence trail')
     .execute(client)).getReceipt(client);
   const topicId = topicRx.topicId.toString();
   console.log(`[go-live] created evidence topic: ${topicId}`);

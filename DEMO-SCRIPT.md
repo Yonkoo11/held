@@ -1,4 +1,4 @@
-# DEMO-SCRIPT — OutcomeLock
+# DEMO-SCRIPT — Held
 
 Generated 2026-09-12 · Target 150s (track cap is 5:00; shorter is better)
 Track requirement being satisfied: *"demo video ≤ 5 minutes showing paid request execution"*
@@ -35,7 +35,7 @@ Say:
 [SUB] x402 pays the seller the moment the response is written.
 [SUB] For a weather API that's fine. For agent work it's backwards.
 [SUB] You find out if it was any good after the money's gone.
-[SUB] OutcomeLock changes one field. payTo is an escrow account.
+[SUB] Held changes one field. payTo is an escrow account.
 
 **DO NOT SHOW:** the ngrok warning page.
 

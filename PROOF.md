@@ -1,4 +1,8 @@
-# OutcomeLock — proof of a live run
+# Held, proof of a live run
+
+> This run was made on 2026-09-12, before the project was renamed from OutcomeLock to Held.
+> The agent ids and schedule memos recorded below still carry the old name. They are left exactly
+> as the ledger recorded them, because they are evidence rather than branding.
 
 Run at 2026-09-12T07:25:52.456Z
 Settlement tier: **hedera-testnet** — Hedera testnet — real USDC, real escrow account

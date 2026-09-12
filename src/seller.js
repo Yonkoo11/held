@@ -101,7 +101,7 @@ function paymentRequired(res, resourceUrl, error) {
     },
     accepts: [requirements(resourceUrl)],
     extensions: {
-      outcomelock: {
+      held: {
         escrow,
         reviewWindowMinutes: REVIEW_WINDOW_MS / 60000,
         releasePolicy: 'approve pays the seller, reject refunds you, silence pays the seller at the deadline',
@@ -404,7 +404,7 @@ async function sweep() {
       const st = await settlement.scheduleStatus(job.scheduleId);
       if (st.executed) {
         const claim = store.transition(job.id, 'held', 'released', {
-          decisionReason: 'review window expired — released by the scheduled transaction',
+          decisionReason: 'nobody decided, so the scheduled transaction paid the seller',
           decisionTx: st.txId, decidedAt: Date.now(),
         });
         if (claim.ok) {
@@ -424,7 +424,7 @@ async function sweep() {
       { decisionReason: 'review window expired' });
     if (!claim.ok) continue;                       // a buyer decided first; leave it alone
     try {
-      const r = await settlement.release(job.id, 'review window expired — auto-released');
+      const r = await settlement.release(job.id, 'nobody decided, so the deadline released it');
       if (r.error) { store.transition(job.id, 'settling', 'held', {}); continue; }
       store.transition(job.id, 'settling', 'released', { decisionTx: r.txId, decidedAt: Date.now() });
       await record(job.id, 'released', { reason: 'review window expired', tx: r.txId, by: 'deadline-sweep' });

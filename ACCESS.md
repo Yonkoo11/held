@@ -1,4 +1,4 @@
-# Access needed before building — OutcomeLock (ETHOnline 2026)
+# Access needed before building — Held (ETHOnline 2026)
 
 Filled 2026-09-07, before any planning document. Deadline 2026-09-13 12:00 EDT (17:00 WAT).
 

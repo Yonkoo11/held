@@ -44,7 +44,7 @@ t('scheduled auto-release with a future expiry + waitForExpiry', () => {
     .addHbarTransfer(you, Hbar.from(5000000, HbarUnit.Tinybar));
   return offline(new ScheduleCreateTransaction()
     .setScheduledTransaction(inner)
-    .setScheduleMemo('OutcomeLock auto-release test')
+    .setScheduleMemo('Held auto-release test')
     .setWaitForExpiry(true)
     .setExpirationTime(Timestamp.fromDate(new Date(Date.now() + 10 * 60 * 1000))));
 });
@@ -53,7 +53,7 @@ t('schedule delete (cancel when the buyer decides early)', () =>
   offline(new ScheduleDeleteTransaction().setScheduleId('0.0.9999')));
 
 t('HCS topic create', () =>
-  offline(new TopicCreateTransaction().setTopicMemo('OutcomeLock evidence trail')));
+  offline(new TopicCreateTransaction().setTopicMemo('Held evidence trail')));
 
 t('HCS message submit', () =>
   offline(new TopicMessageSubmitTransaction()

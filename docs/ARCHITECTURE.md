@@ -2,7 +2,7 @@
 
 ## The one-line change
 
-A normal x402 service puts the seller's account in `payTo`. OutcomeLock puts an **escrow account**
+A normal x402 service puts the seller's account in `payTo`. Held puts an **escrow account**
 there. Everything else follows from that.
 
 ```

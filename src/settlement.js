@@ -1,4 +1,4 @@
-// Escrow. This is the whole point of OutcomeLock: x402 pays for the request immediately, but the
+// Escrow. This is the whole point of Held: x402 pays for the request immediately, but the
 // money lands here instead of in the seller's account, and only moves once the buyer has had a
 // real chance to look at what the agent produced.
 //
@@ -194,7 +194,7 @@ class HederaSettlement {
     const escrowKey = await this.#escrowKey();
     const scheduleTx = await new ScheduleCreateTransaction()
       .setScheduledTransaction(inner)
-      .setScheduleMemo(`OutcomeLock auto-release ${jobId}`)
+      .setScheduleMemo(`Held auto-release ${jobId}`)
       .setWaitForExpiry(true)
       .setExpirationTime(Timestamp.fromDate(new Date(deadlineMs)))
       .freezeWith(client)

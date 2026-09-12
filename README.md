@@ -1,4 +1,4 @@
-# OutcomeLock
+# Held
 
 **An x402-gated agent service on Hedera where the payment goes into escrow instead of to the seller,
 and is released only once the buyer has seen what the agent produced — or by a Hedera scheduled
@@ -31,7 +31,7 @@ useful *after* the money is gone, and your recourse is a support email.
 Sellers have the mirror-image problem. "Refund on request" means any buyer can consume the work and
 then claw the payment back.
 
-OutcomeLock changes one field — `payTo` becomes an escrow account — and gets three endings, with no
+Held changes one field — `payTo` becomes an escrow account — and gets three endings, with no
 trusted party choosing between them:
 
 | the buyer | the money |

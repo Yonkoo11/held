@@ -1,9 +1,10 @@
-# OutcomeLock → **Held** (renamed 2026-09-12, rename not yet applied)
+# Held (renamed from OutcomeLock, 2026-09-12 — rename applied)
 
-The product name is now **Held**: the money is paid, but held until the buyer has looked. The
-rename across README, package.json, the page, the scripts, DEMO-SCRIPT.md and SUBMISSION.md must
-land before the repo is published and before the video is recorded. Until it does, this file and
-the rest of the repo still say OutcomeLock.
+The product name is **Held**: the money is paid, but held until the buyer has looked. The rename
+landed across README, package.json, the page, the scripts, DEMO-SCRIPT.md and SUBMISSION.md.
+Two things deliberately kept the old name: `~/.outcomelock.env` (the live env path, renaming it
+mid-event breaks every npm script for no gain) and the agent ids already written to the Hedera
+evidence topic, which are records of what ran, not branding.
 
 Escrowed settlement for agent work. An x402-gated service takes payment up front, but the money
 lands in escrow instead of the seller's pocket, and is only released once the buyer has looked at
@@ -25,7 +26,7 @@ All dated 2026-09-07 unless stated.
   **But the deferral window is a Hedera transaction lifetime, not days:** the x402 Hedera payload is
   `{ transaction: base64 }`, a partially-signed Hedera transaction, and those expire in minutes.
   So the authorization flow cannot hold money for a buyer review period.
-  **Conclusion unchanged, reason corrected:** OutcomeLock still needs its own escrow. The x402
+  **Conclusion unchanged, reason corrected:** Held still needs its own escrow. The x402
   `payTo` points at an escrow account, settlement happens immediately into escrow, and release is a
   separate, later Hedera transaction.
 - **Hedera testnet USDC is real and is the asset to price in:** token `0.0.429274`, symbol USDC,

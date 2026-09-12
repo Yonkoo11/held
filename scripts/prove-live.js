@@ -1,4 +1,4 @@
-// Runs the whole OutcomeLock loop against a running seller, then goes back to the Hedera mirror
+// Runs the whole Held loop against a running seller, then goes back to the Hedera mirror
 // node and checks that what we claim happened actually appears on the ledger. Writes PROOF.md.
 //
 //   node --env-file=.env scripts/prove-live.js
@@ -157,7 +157,7 @@ async function main() {
 
   const allFound = checks.length > 0 && checks.every((c) => c.found);
   const lines = [
-    '# OutcomeLock — proof of a live run',
+    '# Held — proof of a live run',
     '',
     `Run at ${new Date().toISOString()}`,
     `Settlement tier: **${tier.name}** — ${tier.label}`,

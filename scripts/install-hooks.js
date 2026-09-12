@@ -7,7 +7,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const HOOK = `#!/bin/sh
-# OutcomeLock pre-commit secret guard. Installed by scripts/install-hooks.js.
+# Held pre-commit secret guard. Installed by scripts/install-hooks.js.
 # Bypass only if you are certain:  git commit --no-verify
 
 fail=0
@@ -55,7 +55,7 @@ if (!fs.existsSync(dir)) {
 const target = path.join(dir, 'pre-commit');
 if (fs.existsSync(target)) {
   const existing = fs.readFileSync(target, 'utf8');
-  if (!existing.includes('OutcomeLock pre-commit secret guard')) {
+  if (!existing.includes('Held pre-commit secret guard')) {
     fs.copyFileSync(target, `${target}.backup`);
     console.log(`Existing pre-commit hook backed up to ${target}.backup`);
   }

@@ -66,7 +66,7 @@ class HcsEvidence {
     const { TopicCreateTransaction } = await import('@hiero-ledger/sdk');
     const client = await this.#client();
     const rx = await (await new TopicCreateTransaction()
-      .setTopicMemo('OutcomeLock evidence trail')
+      .setTopicMemo('Held evidence trail')
       .execute(client)).getReceipt(client);
     this.topicId = rx.topicId.toString();
     console.log(`[evidence] created HCS topic ${this.topicId} — put HCS_TOPIC_ID=${this.topicId} in your env to reuse it`);

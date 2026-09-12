@@ -76,11 +76,30 @@ All dated 2026-09-07 unless stated.
 - **Puppeteer's bundled Chrome was missing**; `npx puppeteer browsers install chrome` fetched
   146.0.7680.153. The MCP server expects 131, so pass `executablePath` in `launchOptions`.
 
+### Added 2026-09-12 (dependency + dry-run pass)
+
+- **The Circle faucet wants a Hedera native account id (`0.0.x`), not an EVM `0x` address.**
+  USDC on Hedera is an HTS token (`0.0.429274`), so it is addressed by account id. Verified against
+  Circle's multi-chain USDC page and contract-address docs.
+- **The address to fund is the BUYER account, and it does not exist until `go-live.js` runs.** Not
+  the operator, not the escrow. The buyer pays; the escrow only receives from the buyer.
+- **`@hiero-ledger/sdk` is now a pinned direct dependency at 2.85.0**, and `@hashgraph/sdk` has been
+  removed. It was unused, and holding two Hedera SDKs is the exact hazard recorded above. Relying on
+  hiero arriving transitively via `@x402/hedera` was fragile — a fresh install elsewhere could
+  resolve differently and every Hedera path would break.
+- **Every SDK call used by this project is verified to exist**: 15 instance methods and 8 statics
+  checked against the installed package, plus `HbarUnit.Tinybar`. None invented.
+- **All 7 Hedera transactions build offline** — `node scripts/dryrun-hedera.js`, no account or
+  network needed. This includes the scheduled auto-release with `setWaitForExpiry(true)` and a
+  future `setExpirationTime`, which was previously an open unknown. **It proves the client accepts
+  the shape; it does NOT prove the network accepts it.**
+
 ## Open Unknowns — DO NOT invent answers
 
-- Whether a scheduled transaction can be created with a multi-day `expirationTime` and
-  `waitForExpiry`, then deleted early if the buyer acts first. The fields exist in the mirror node
-  schema; creating one needs credentials. **Still unproven — the auto-release depends on it.**
+- Whether the **network** accepts a scheduled transaction with `waitForExpiry` and a future
+  expiry, and whether it can be deleted early. Narrowed 2026-09-12: the client builds it without
+  complaint (`scripts/dryrun-hedera.js`) and the mirror node models both fields. What remains
+  unproven is submission and execution, which needs credentials. **The auto-release depends on it.**
 - Whether HCS-14 agent identity has a usable SDK or is a spec only. Unprobed.
 - Whether the Hedera EVM (JSON-RPC relay) testnet endpoint is stable enough for contract deploys
   this week. Unprobed.

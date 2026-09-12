@@ -4,105 +4,302 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>OutcomeLock</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;450;500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
+  /* ── tokens ───────────────────────────────────────────────────────────────
+     Light-only. A payment under review is a financial record, and every other
+     tab at this event is a dark dashboard. One accent; every other surface is
+     an opacity derivative of the ink. Shadow philosophy: soft-elevation ladder. */
   :root {
-    --bg: #f6f6f4; --panel: #fff; --ink: #16181d; --muted: #5f646e; --line: #e3e3df;
-    --held: #9a6b00; --held-bg: #fdf3dc; --ok: #1c6b3f; --ok-bg: #e4f3ea;
-    --no: #a32b20; --no-bg: #fbe9e7; --accent: #2b4acb;
-    --mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+    --paper:      #faf8f4;
+    --paper-sunk: #f3f0e9;
+    --surface:    #fffefb;
+    --surface-2:  #fffdf8;
+
+    --ink:    #17150f;
+    --ink-2:  rgba(23, 21, 15, 0.62);
+    --ink-3:  rgba(23, 21, 15, 0.40);
+    --ink-4:  rgba(23, 21, 15, 0.24);
+
+    --rule:        rgba(23, 21, 15, 0.10);
+    --rule-strong: rgba(23, 21, 15, 0.20);
+
+    --accent:      #b0431c;                    /* one brand colour, stamp red */
+    --accent-soft: rgba(176, 67, 28, 0.10);
+    --accent-glow: rgba(176, 67, 28, 0.16);
+
+    --paid:   #2f6b43;                         /* meaning only, used once */
+    --back:   #9a3527;                         /* meaning only, used once */
+
+    /* CF-1 — tokenised radius scale, varying by component role */
+    --r-sm: 4px;    /* controls */
+    --r-md: 9px;    /* panels  */
+    --r-lg: 16px;   /* the ask surface */
+    --r-full: 999px;
+
+    /* CF-5 — soft-elevation ladder, layered, always vertical offset */
+    --lift-1: 0 1px 2px rgba(23,21,15,.05), 0 0 0 1px rgba(23,21,15,.04);
+    --lift-2: 0 2px 4px rgba(23,21,15,.05), 0 6px 16px -6px rgba(23,21,15,.10), 0 0 0 1px rgba(23,21,15,.05);
+    --lift-3: 0 4px 8px rgba(23,21,15,.06), 0 18px 36px -12px rgba(23,21,15,.16), 0 0 0 1px rgba(23,21,15,.06);
+
+    --ease: cubic-bezier(0.23, 1, 0.32, 1);
+
+    --serif: 'Instrument Serif', 'Iowan Old Style', Georgia, 'Times New Roman', serif;
+    --sans:  'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    --mono:  'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
   }
-  @media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) {
-      --bg: #111317; --panel: #181b21; --ink: #e9eaec; --muted: #969ba6; --line: #272b33;
-      --held: #e0b04a; --held-bg: #2e2616; --ok: #6fd398; --ok-bg: #12281c;
-      --no: #f08b80; --no-bg: #2c1614; --accent: #8ba4ff;
-    }
-  }
+
   * { box-sizing: border-box; }
-  body { margin: 0; background: var(--bg); color: var(--ink);
-         font: 15px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif; }
-  .wrap { max-width: 860px; margin: 0 auto; padding: 32px 20px 80px; }
-  header { margin-bottom: 28px; }
-  h1 { font-size: 25px; margin: 0 0 6px; letter-spacing: -0.02em; }
-  .tag { color: var(--muted); font-size: 14px; margin: 0; }
-  .tiers { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
-  .chip { font: 11px/1 var(--mono); text-transform: uppercase; letter-spacing: .06em;
-          padding: 6px 9px; border-radius: 5px; border: 1px solid var(--line); color: var(--muted); }
-  .chip.degraded { color: var(--held); background: var(--held-bg); border-color: transparent; }
-  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
-          padding: 18px; margin-bottom: 16px; }
-  label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 6px; }
-  textarea { width: 100%; min-height: 72px; resize: vertical; padding: 11px 12px; font: inherit;
-             border: 1px solid var(--line); border-radius: 7px; background: var(--bg); color: var(--ink); }
-  button { font: inherit; font-weight: 550; padding: 9px 15px; border-radius: 7px; cursor: pointer;
-           border: 1px solid transparent; background: var(--accent); color: #fff; }
-  button:disabled { opacity: .45; cursor: default; }
-  button.ghost { background: transparent; border-color: var(--line); color: var(--ink); }
-  .row { display: flex; gap: 9px; align-items: center; flex-wrap: wrap; margin-top: 13px; }
-  .price { font: 12px var(--mono); color: var(--muted); }
-  .job { border-top: 1px solid var(--line); padding-top: 15px; margin-top: 15px; }
-  .job:first-of-type { border-top: 0; padding-top: 0; margin-top: 0; }
-  .jobhead { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; }
-  .q { font-weight: 550; }
-  .state { font: 11px/1 var(--mono); text-transform: uppercase; letter-spacing: .06em;
-           padding: 5px 8px; border-radius: 5px; white-space: nowrap; }
-  .state.held { background: var(--held-bg); color: var(--held); }
-  .state.released { background: var(--ok-bg); color: var(--ok); }
-  .state.refunded { background: var(--no-bg); color: var(--no); }
-  pre { white-space: pre-wrap; word-break: break-word; font: 13px/1.5 var(--mono);
-        background: var(--bg); border: 1px solid var(--line); border-radius: 7px;
-        padding: 12px; margin: 11px 0; overflow-x: auto; }
-  .meta { font: 11.5px var(--mono); color: var(--muted); margin-top: 8px; }
-  .meta a { color: var(--accent); }
-  .clock { font: 11.5px var(--mono); color: var(--held); }
-  .trail { margin-top: 10px; font: 11.5px/1.7 var(--mono); color: var(--muted); }
-  .trail div { display: flex; gap: 9px; }
-  .trail b { color: var(--ink); font-weight: 550; min-width: 130px; }
-  .empty { color: var(--muted); font-size: 14px; }
-  .err { color: var(--no); font-size: 13.5px; margin-top: 9px; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font: 400 15px/1.55 var(--sans);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    /* layered ground, not a flat fill */
+    background-image:
+      radial-gradient(1100px 520px at 82% -8%, var(--accent-soft), transparent 62%),
+      radial-gradient(760px 420px at 4% 0%, rgba(23,21,15,.05), transparent 60%);
+    background-attachment: fixed;
+  }
+  /* paper grain — keeps the ground from reading as a flat fill */
+  body::before {
+    content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 0;
+    opacity: .035; mix-blend-mode: multiply;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  .sheet { position: relative; z-index: 1; max-width: 1080px; margin: 0 auto; padding: 0 28px 120px; }
+
+  /* ── masthead ─────────────────────────────────────────────────────────── */
+  header { padding: 72px 0 0; }
+  .eyebrow {
+    font: 500 11px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase;
+    color: var(--ink-3); display: flex; align-items: center; gap: 10px;
+  }
+  .eyebrow b { color: var(--accent); font-weight: 500; }
+
+  h1 {
+    font: 400 clamp(42px, 7.2vw, 68px)/1.03 var(--serif);
+    letter-spacing: -0.022em;
+    margin: 20px 0 0;
+    max-width: 15ch;                      /* SR-6 — stops well before the edge */
+  }
+  h1 em { font-style: italic; color: var(--accent); }
+
+  .standfirst {
+    margin: 18px 0 0; max-width: 54ch;
+    font-size: 16.5px; line-height: 1.6; color: var(--ink-2);
+  }
+
+  .tiers { display: flex; flex-wrap: wrap; gap: 7px; margin: 26px 0 0; }
+  .chip {
+    font: 400 12px/1 var(--mono); letter-spacing: .04em;
+    padding: 7px 10px; border-radius: var(--r-sm);
+    background: var(--surface); color: var(--ink-3); box-shadow: var(--lift-1);
+  }
+  .chip[data-degraded="true"] { color: var(--accent); background: var(--accent-soft); box-shadow: none; }
+
+  /* ── the escrow statement: the product in one line ────────────────────── */
+  .statement {
+    margin: 44px 0 0; padding: 22px 24px;
+    background: var(--surface); border-radius: var(--r-md); box-shadow: var(--lift-2);
+    display: grid; grid-template-columns: 1fr auto; gap: 20px; align-items: center;
+  }
+  .statement .k { font: 500 10.5px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--ink-3); }
+  .statement .v { font: 400 15px/1.5 var(--sans); color: var(--ink); margin-top: 9px; }
+  .statement .v code {
+    font: 500 13.5px/1 var(--mono); background: var(--paper-sunk);
+    padding: 3px 6px; border-radius: var(--r-sm); color: var(--ink);
+  }
+  .statement .price { text-align: right; }
+  .statement .price .amt {
+    font: 400 30px/1 var(--mono); font-variant-numeric: tabular-nums; letter-spacing: -0.02em;
+  }
+  .statement .price .per { font: 400 12px/1 var(--mono); color: var(--ink-3); margin-top: 7px; letter-spacing: .04em; }
+
+  /* ── ask ──────────────────────────────────────────────────────────────── */
+  .ask { margin: 18px 0 0; padding: 24px; background: var(--surface-2); border-radius: var(--r-lg); box-shadow: var(--lift-2); }
+  .ask label { display: block; font: 500 10.5px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--ink-3); }
+  textarea {
+    width: 100%; margin-top: 12px; min-height: 76px; resize: vertical;
+    padding: 13px 14px; font: 400 16px/1.55 var(--sans); color: var(--ink);
+    background: var(--paper); border: 0; border-radius: var(--r-md);
+    box-shadow: inset 0 0 0 1px var(--rule); transition: box-shadow 180ms var(--ease);
+  }
+  textarea::placeholder { color: var(--ink-4); }
+  textarea:hover { box-shadow: inset 0 0 0 1px var(--rule-strong); }
+  textarea:focus { outline: 0; box-shadow: inset 0 0 0 1px var(--accent), 0 0 0 3px var(--accent-glow); }
+
+  .askrow { display: flex; align-items: center; gap: 14px; margin-top: 14px; flex-wrap: wrap; }
+
+  button {
+    font: 500 14px/1 var(--sans); letter-spacing: -0.005em;
+    padding: 12px 18px; min-height: 44px; border: 0; border-radius: var(--r-sm);
+    background: var(--ink); color: var(--paper); cursor: pointer;
+    box-shadow: var(--lift-2);
+    transition: transform 160ms var(--ease), box-shadow 160ms var(--ease), background 160ms var(--ease);
+    -webkit-tap-highlight-color: rgba(0,0,0,0);
+  }
+  @media (hover: hover) {
+    button:hover { transform: translateY(-1px); box-shadow: var(--lift-3); }
+    button.ghost:hover { background: var(--paper-sunk); transform: translateY(-1px); box-shadow: var(--lift-2); }
+  }
+  button:active { transform: translateY(0) scale(.978); transition-duration: 80ms; box-shadow: var(--lift-1); }
+  button:focus-visible { outline: 0; box-shadow: var(--lift-2), 0 0 0 3px var(--accent-glow); }
+  button[disabled] { opacity: .45; cursor: default; transform: none; box-shadow: var(--lift-1); }
+  button.primary { background: var(--accent); box-shadow: var(--lift-2), 0 0 24px -6px var(--accent-glow); }
+  button.ghost { background: var(--surface); color: var(--ink); box-shadow: var(--lift-1); }
+
+  .hint { font: 400 12.5px/1.5 var(--mono); color: var(--ink-3); }
+  .err { margin-top: 12px; font-size: 13.5px; color: var(--back); }
+
+  /* ── the ledger: hairline rows, no cards ──────────────────────────────── */
+  .ledger { margin: 56px 0 0; }
+  .ledger > .k {
+    font: 500 10.5px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase;
+    color: var(--ink-3); padding-bottom: 14px; border-bottom: 1px solid var(--rule-strong);
+    display: flex; justify-content: space-between;
+  }
+
+  .row { padding: 26px 0; border-bottom: 1px solid var(--rule); }
+  .rowhead { display: grid; grid-template-columns: 1fr auto; gap: 28px; align-items: start; }
+  .q { font: 400 19px/1.4 var(--sans); letter-spacing: -0.01em; max-width: 46ch; }
+
+  /* SR-3 — the right edge. Metadata aligned to a shared axis makes a second
+     vertical line, which is what gives the list structure without boxes. */
+  .edge { text-align: right; display: flex; flex-direction: column; align-items: flex-end; gap: 9px; min-width: 172px; }
+  .state {
+    font: 500 10px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase;
+    padding: 6px 9px; border-radius: var(--r-full);
+  }
+  .state[data-s="held"]     { color: var(--accent); background: var(--accent-soft); }
+  .state[data-s="released"] { color: var(--paid);   background: rgba(47,107,67,.10); }
+  .state[data-s="refunded"] { color: var(--back);   background: rgba(154,53,39,.10); }
+  .state[data-s="settling"] { color: var(--ink-3);  background: var(--paper-sunk); }
+  .amt { font: 400 17px/1 var(--mono); font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+
+  /* signature element — the clock. The one thing that moves on its own, and the
+     one fact people get wrong: silence pays the SELLER. */
+  .clock { text-align: right; }
+  .clock .t {
+    font: 400 27px/1 var(--mono); font-variant-numeric: tabular-nums;
+    letter-spacing: -0.03em; color: var(--accent);
+  }
+  .clock .lab { font: 400 12px/1.4 var(--mono); letter-spacing: .02em; color: var(--ink-3); margin-top: 6px; white-space: nowrap; }
+  .clock[data-live="true"] .t { animation: tick 2s var(--ease) infinite; }
+  @keyframes tick { 0%, 100% { opacity: 1; } 50% { opacity: .62; } }
+
+  .deliverable {
+    position: relative; margin: 20px 0 0; padding: 20px 22px;
+    background: var(--surface); border-radius: var(--r-md); box-shadow: var(--lift-1);
+    word-break: break-word;
+    font: 400 14.5px/1.68 var(--sans); color: var(--ink); max-width: 72ch;
+  }
+  .deliverable p { margin: 0 0 0.85em; }
+  .deliverable p:last-child { margin-bottom: 0; }
+  .deliverable strong { font-weight: 500; }
+  .deliverable code { font: 400 13.5px/1 var(--mono); background: var(--paper-sunk); padding: 2px 5px; border-radius: var(--r-sm); }
+  .deliverable.clamped { max-height: 168px; overflow: hidden; }
+  .deliverable.clamped::after {
+    content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 72px;
+    background: linear-gradient(to bottom, rgba(255,254,251,0), var(--surface));
+    border-radius: 0 0 var(--r-md) var(--r-md); pointer-events: none;
+  }
+  button.more {
+    margin-top: -14px; margin-left: 22px; position: relative; z-index: 2;
+    padding: 7px 12px; min-height: 0;
+    font: 500 12px/1 var(--mono); letter-spacing: .06em;
+    background: transparent; color: var(--ink-2); box-shadow: inset 0 0 0 1px var(--rule);
+  }
+  @media (hover: hover) { button.more:hover { color: var(--ink); box-shadow: inset 0 0 0 1px var(--rule-strong); transform: translateY(-1px); } }
+  .byline { margin-top: 11px; font: 400 12px/1.5 var(--mono); color: var(--ink-3); }
+  .decide { display: flex; gap: 9px; margin-top: 16px; flex-wrap: wrap; }
+  .outcome { margin-top: 14px; font: 400 12.5px/1.6 var(--mono); color: var(--ink-3); word-break: break-all; }
+
+  .trail { margin-top: 16px; display: flex; flex-wrap: wrap; gap: 0 18px; }
+  .trail span { font: 400 12px/1.9 var(--mono); color: var(--ink-4); }
+  .trail span b { color: var(--ink-3); font-weight: 500; }
+
+  .empty { padding: 36px 0; color: var(--ink-3); font-size: 14.5px; }
+
+  footer { margin-top: 64px; padding-top: 22px; border-top: 1px solid var(--rule); }
+  footer p { margin: 0; font: 400 12px/1.7 var(--mono); color: var(--ink-4); max-width: 70ch; word-break: break-word; }
+
+  @media (max-width: 720px) {
+    .sheet { padding: 0 20px 88px; }
+    header { padding-top: 48px; }
+    .statement { grid-template-columns: 1fr; gap: 18px; }
+    .statement .price { text-align: left; }
+    .rowhead { grid-template-columns: 1fr; gap: 16px; }
+    .edge { min-width: 0; flex-direction: row; flex-wrap: wrap; align-items: center; text-align: left; gap: 12px; }
+    .clock { text-align: left; }
+    .clock .lab { max-width: none; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition-duration: 1ms !important; }
+  }
 </style>
 </head>
 <body>
-<div class="wrap">
+<div class="sheet">
   <header>
-    <h1>OutcomeLock</h1>
-    <p class="tag">You pay up front. The money waits in escrow until you have read what the agent
-      actually produced.</p>
+    <div class="eyebrow"><b>&#9679;</b> <span id="net">hedera testnet</span> &middot; x402 via Blocky402</div>
+    <h1>You paid for this. The money is <em>still yours</em> until you have read it.</h1>
+    <p class="standfirst">An agent service where the payment goes into escrow instead of to the seller.
+      Approve and they are paid. Reject and you are refunded. Say nothing and the deadline pays them —
+      the opposite of a card authorisation, and the point.</p>
     <div class="tiers" id="tiers"></div>
   </header>
 
-  <div class="card">
+  <section class="statement">
+    <div>
+      <div class="k">Where your payment goes</div>
+      <div class="v">Not to the seller &mdash; to escrow account <code id="escrow">&hellip;</code>
+        which the 402 quote names as its <code>payTo</code></div>
+    </div>
+    <div class="price">
+      <div class="amt" id="price">&mdash;</div>
+      <div class="per">per request</div>
+    </div>
+  </section>
+
+  <section class="ask">
     <label for="q">Ask the agent something</label>
-    <textarea id="q" placeholder="Explain what a Hedera scheduled transaction is and when it executes."></textarea>
-    <div class="row">
-      <button id="go">Pay and ask</button>
-      <span class="price" id="price"></span>
+    <textarea id="q" placeholder="What is a Hedera scheduled transaction and when does it execute?"></textarea>
+    <div class="askrow">
+      <button class="primary" id="go">Pay and ask</button>
+      <span class="hint" id="hint"></span>
     </div>
     <div class="err" id="err" hidden></div>
-  </div>
+  </section>
 
-  <div class="card">
-    <div id="jobs"><p class="empty">No jobs yet.</p></div>
-  </div>
+  <section class="ledger">
+    <div class="k"><span>Jobs</span><span id="count"></span></div>
+    <div id="jobs"><p class="empty">Nothing yet. Ask the agent something and watch the clock start.</p></div>
+  </section>
+
+  <footer><p id="foot"></p></footer>
 </div>
 
 <script>
 const $ = (id) => document.getElementById(id);
-let priceInfo = null;
 
-// The claim token proves you are the buyer for a job. It is shown once, so the page keeps it.
-// Per-browser only: open the page elsewhere and you cannot decide on these jobs, which is the point.
+/* The claim token proves you are the buyer for a job. It is shown once, so the page keeps it.
+   Per-browser only: open this elsewhere and you cannot decide on these jobs, which is the point. */
 const TOKENS = 'outcomelock.tokens';
-function readTokens() {
-  try { return JSON.parse(localStorage.getItem(TOKENS) || '{}'); } catch { return {}; }
-}
+const readTokens = () => { try { return JSON.parse(localStorage.getItem(TOKENS) || '{}'); } catch { return {}; } };
 function saveToken(jobId, token) {
   try { const t = readTokens(); t[jobId] = token; localStorage.setItem(TOKENS, JSON.stringify(t)); } catch {}
 }
 
-// Everything below builds DOM nodes and sets textContent. Nothing here concatenates HTML, because
-// the question comes from a user and the deliverable comes from a model — both are attacker
-// controlled, and an escape helper is one forgotten call away from being wrong.
+/* Everything below builds DOM nodes and sets textContent. Nothing concatenates HTML, because the
+   question comes from a user and the deliverable comes from a model — both attacker controlled. */
 function el(tag, props = {}, children = []) {
   const n = document.createElement(tag);
   for (const [k, v] of Object.entries(props)) {
@@ -115,68 +312,118 @@ function el(tag, props = {}, children = []) {
   for (const c of [].concat(children)) if (c) n.appendChild(c);
   return n;
 }
-function clear(n) { while (n.firstChild) n.removeChild(n.firstChild); }
+const clear = (n) => { while (n.firstChild) n.removeChild(n.firstChild); };
+
+/* Models still emit **bold** and *italic* even when told not to. Render those as real nodes rather
+   than showing the asterisks — and still never touch innerHTML, so the text stays inert. */
+function prose(text) {
+  const frag = document.createDocumentFragment();
+  for (const line of String(text || '').split('\n')) {
+    const p = el('p');
+    // strip leading list markers; the paragraph itself carries the break
+    const clean = line.replace(/^\s*(?:[-*•]|\d+\.)\s+/, '');
+    const re = /\*\*([^*]+)\*\*|\*([^*]+)\*|`([^`]+)`/g;
+    let last = 0, m;
+    while ((m = re.exec(clean)) !== null) {
+      if (m.index > last) p.appendChild(document.createTextNode(clean.slice(last, m.index)));
+      if (m[1] !== undefined) p.appendChild(el('strong', { text: m[1] }));
+      else if (m[2] !== undefined) p.appendChild(el('em', { text: m[2] }));
+      else p.appendChild(el('code', { text: m[3] }));
+      last = re.lastIndex;
+    }
+    if (last < clean.length) p.appendChild(document.createTextNode(clean.slice(last)));
+    if (p.textContent.trim()) frag.appendChild(p);
+  }
+  return frag;
+}
 
 async function loadHealth() {
   const h = await (await fetch('/health')).json();
-  $('price').textContent = `${h.price} ${h.asset.symbol} per request · escrow ${h.escrow}`;
+  $('escrow').textContent = h.escrow;
+  $('price').textContent = `${h.price} ${h.asset.symbol}`;
+  $('net').textContent = h.tiers.settlement.degraded ? 'local stand-in' : 'hedera testnet';
+  $('hint').textContent = `${h.price} ${h.asset.symbol}, held until you decide`;
   const box = $('tiers');
   clear(box);
   for (const [k, v] of Object.entries(h.tiers || {})) {
-    box.appendChild(el('span', { class: `chip ${v.degraded ? 'degraded' : ''}`, text: `${k}: ${v.label}` }));
+    box.appendChild(el('span', { class: 'chip', 'data-degraded': String(v.degraded), text: `${k} · ${v.label}` }));
   }
+  $('foot').textContent =
+    `facilitator ${h.facilitator} · fee payer ${h.feePayer} · evidence ${h.evidenceTopic} · agent ${h.agent.id}`;
 }
 
-function countdown(deadline) {
-  const left = deadline - Date.now();
-  if (left <= 0) return 'releasing…';
-  const m = Math.floor(left / 60000), s = Math.floor((left % 60000) / 1000);
-  return `auto-releases in ${m}m ${String(s).padStart(2, '0')}s`;
+function countdown(ms) {
+  if (ms <= 0) return 'releasing';
+  const m = Math.floor(ms / 60000), s = Math.floor((ms % 60000) / 1000);
+  return `${m}:${String(s).padStart(2, '0')}`;
 }
 
 function jobNode(j) {
   const mine = Boolean(readTokens()[j.id]);
-  const head = el('div', { class: 'jobhead' }, [
-    el('span', { class: 'q', text: j.question }),
-    el('span', { class: `state ${j.state}`, text: j.state }),
+  const held = j.state === 'held';
+
+  const edge = el('div', { class: 'edge' }, [
+    el('span', { class: 'state', 'data-s': j.state, text: j.state }),
+    el('span', { class: 'amt', text: `${j.amountDisplay} ${j.assetSymbol || ''}` }),
   ]);
-
-  const meta = el('div', { class: 'meta',
-    text: `${j.amountDisplay} ${j.assetSymbol || ''} · agent ${j.agentVersion || ''} · tier ${j.workerTier || ''}` });
-
-  const parts = [head, meta];
-  if (j.state === 'held') {
-    parts.push(el('div', { class: 'clock', 'data-deadline': String(j.deadline), text: countdown(j.deadline) }));
+  if (held) {
+    edge.appendChild(el('div', { class: 'clock', 'data-live': 'true', 'data-deadline': String(j.deadline) }, [
+      el('div', { class: 't', text: countdown(j.deadline - Date.now()) }),
+      el('div', { class: 'lab', text: 'then it pays the seller' }),
+    ]));
   }
-  parts.push(el('pre', { text: j.deliverable || '' }));
 
-  if (j.state === 'held' && mine) {
-    parts.push(el('div', { class: 'row' }, [
+  const parts = [
+    el('div', { class: 'rowhead' }, [el('div', { class: 'q', text: j.question }), edge]),
+    (() => {
+      const d = el('div', { class: 'deliverable' });
+      d.appendChild(prose(j.deliverable));
+      if ((j.deliverable || '').length > 620) {
+        d.classList.add('clamped');
+        const more = el('button', { class: 'more', type: 'button', text: 'Read all' });
+        more.addEventListener('click', () => {
+          const open = d.classList.toggle('clamped');
+          more.textContent = open ? 'Read all' : 'Show less';
+        });
+        return el('div', {}, [d, more]);
+      }
+      return d;
+    })(),
+    el('div', { class: 'byline', text: `${j.workerTier || ''} · ${j.model || ''} · ${j.agentVersion || ''}` }),
+  ];
+
+  if (held && mine) {
+    parts.push(el('div', { class: 'decide' }, [
       el('button', { 'data-act': 'approve', 'data-id': j.id, text: 'Approve — pay the seller' }),
       el('button', { class: 'ghost', 'data-act': 'reject', 'data-id': j.id, text: 'Reject — refund me' }),
     ]));
-  } else if (j.state === 'held') {
-    parts.push(el('div', { class: 'meta', text: 'paid for in another browser — only the buyer who paid can decide' }));
+  } else if (held) {
+    parts.push(el('div', { class: 'outcome', text: 'paid for in another browser — only the buyer who paid can decide' }));
   } else {
-    const tail = [j.decisionReason, j.decisionTx].filter(Boolean).join(' · ');
-    parts.push(el('div', { class: 'meta', text: tail }));
+    const tail = [j.decisionReason, j.decisionTx].filter(Boolean).join('  ·  ');
+    if (tail) parts.push(el('div', { class: 'outcome', text: tail }));
   }
 
   const trail = el('div', { class: 'trail' });
   for (const e of j.evidence || []) {
-    trail.appendChild(el('div', {}, [
+    trail.appendChild(el('span', {}, [
       el('b', { text: e.type }),
-      el('span', { text: new Date(e.at).toLocaleTimeString() }),
+      document.createTextNode(' ' + new Date(e.at).toLocaleTimeString()),
     ]));
   }
   parts.push(trail);
-  return el('div', { class: 'job' }, parts);
+  return el('div', { class: 'row' }, parts);
 }
 
 async function loadJobs() {
   const list = await (await fetch('/jobs')).json();
   const box = $('jobs');
-  if (!list.length) { clear(box); box.appendChild(el('p', { class: 'empty', text: 'No jobs yet.' })); return; }
+  $('count').textContent = list.length ? `${list.length} total` : '';
+  if (!list.length) {
+    clear(box);
+    box.appendChild(el('p', { class: 'empty', text: 'Nothing yet. Ask the agent something and watch the clock start.' }));
+    return;
+  }
   const full = await Promise.all(list.slice(0, 8).map((j) => fetch(`/jobs/${encodeURIComponent(j.id)}`).then((r) => r.json())));
   clear(box);
   for (const j of full) box.appendChild(jobNode(j));
@@ -184,8 +431,9 @@ async function loadJobs() {
 
 $('go').addEventListener('click', async () => {
   const question = $('q').value.trim();
-  if (!question) return;
-  $('go').disabled = true; $('go').textContent = 'Paying…'; $('err').hidden = true;
+  if (!question) { $('q').focus(); return; }
+  const btn = $('go');
+  btn.disabled = true; btn.textContent = 'Settling on Hedera…'; $('err').hidden = true;
   try {
     const r = await fetch('/demo/buy', {
       method: 'POST', headers: { 'content-type': 'application/json' },
@@ -199,15 +447,17 @@ $('go').addEventListener('click', async () => {
   } catch (e) {
     $('err').textContent = e.message; $('err').hidden = false;
   } finally {
-    $('go').disabled = false; $('go').textContent = 'Pay and ask';
+    btn.disabled = false; btn.textContent = 'Pay and ask';
   }
 });
 
 $('jobs').addEventListener('click', async (ev) => {
   const b = ev.target.closest('button[data-act]');
   if (!b) return;
+  const was = b.textContent;
   b.disabled = true;
-  const res = await fetch(`/jobs/${b.dataset.id}/${b.dataset.act}`, {
+  b.textContent = b.dataset.act === 'approve' ? 'Paying the seller…' : 'Refunding…';
+  const res = await fetch(`/jobs/${encodeURIComponent(b.dataset.id)}/${b.dataset.act}`, {
     method: 'POST',
     headers: { 'content-type': 'application/json', 'X-Job-Token': readTokens()[b.dataset.id] || '' },
     body: JSON.stringify({ reason: b.dataset.act === 'approve' ? 'looks right' : 'not what I asked for' }),
@@ -215,13 +465,15 @@ $('jobs').addEventListener('click', async (ev) => {
   if (!res.ok) {
     const e = await res.json().catch(() => ({}));
     $('err').textContent = e.error || `could not ${b.dataset.act}`; $('err').hidden = false;
+    b.disabled = false; b.textContent = was;
   }
   await loadJobs();
 });
 
 setInterval(() => {
-  document.querySelectorAll('.clock[data-deadline]').forEach((el) => {
-    el.textContent = countdown(Number(el.dataset.deadline));
+  document.querySelectorAll('.clock[data-deadline]').forEach((c) => {
+    const t = c.querySelector('.t');
+    if (t) t.textContent = countdown(Number(c.dataset.deadline) - Date.now());
   });
 }, 1000);
 setInterval(loadJobs, 6000);

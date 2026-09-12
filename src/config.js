@@ -32,7 +32,7 @@ const env = (k) => {
 export function settlementTier() {
   if (env('HEDERA_OPERATOR_ID') && env('HEDERA_OPERATOR_KEY')) {
     return { name: 'hedera-testnet', degraded: false,
-             label: 'Hedera testnet — real USDC, real escrow account' };
+             label: `Hedera testnet — real ${payAsset().symbol}, real escrow account` };
   }
   return { name: 'local-standin', degraded: true,
            label: 'LOCAL SIMULATION — NOT HEDERA TESTNET' };
@@ -70,7 +70,12 @@ export function workerTier() {
 }
 
 export function tiers() {
-  return { settlement: settlementTier(), evidence: evidenceTier(), worker: workerTier() };
+  const chain = workerTiers();
+  const worker = { ...chain[0] };
+  // Name the whole cascade. Saying "Claude" when a dead key means Gemini answers is the same false
+  // attribution the receipts are not allowed to make.
+  if (chain.length > 1) worker.label = chain.map((t) => t.name).join(' → ');
+  return { settlement: settlementTier(), evidence: evidenceTier(), worker };
 }
 
 export function printTiers(who) {

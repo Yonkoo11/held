@@ -10,8 +10,9 @@ import { fileURLToPath } from 'node:url';
 import { workerTier, workerTiers } from './config.js';
 
 const PROMPT_TEMPLATE =
-  'You are a research assistant. Answer the question below in at most 200 words. ' +
-  'Be concrete and cite nothing you cannot support.\n\nQuestion: ';
+  'You are a research assistant. Answer the question below in at most 120 words of plain prose. ' +
+  'Write continuous sentences. Do NOT use markdown, asterisks, bullet points, numbered lists or ' +
+  'headings. Be concrete and claim nothing you cannot support.\n\nQuestion: ';
 
 const MODELS = {
   anthropic: process.env.ANTHROPIC_MODEL || 'claude-opus-5',

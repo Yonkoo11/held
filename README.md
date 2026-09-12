@@ -50,7 +50,7 @@ for real, see [Running on Hedera](#running-on-hedera).
 | command | what it does |
 |---|---|
 | `npm test` | offline transaction build + key handling + all three endings |
-| `npm run attack` | 16 adversarial checks against a running seller |
+| `npm run attack` | 16 adversarial checks. Point `SELLER_URL` at a test instance — its jobs land in that seller's data directory |
 | `npm run prove` | runs every path for real, then re-reads the mirror node to confirm each id |
 | `npm run dryrun` | builds every Hedera transaction offline, no account needed |
 | `npm run check:secrets` | audits permissions, git tracking and the whole of git history |

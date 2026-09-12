@@ -84,12 +84,16 @@
   .eyebrow b { color: var(--accent); font-weight: 500; }
 
   h1 {
-    font: 400 clamp(42px, 7.2vw, 68px)/1.03 var(--serif);
+    font: 400 clamp(38px, 5.6vw, 64px)/1.05 var(--serif);
     letter-spacing: -0.022em;
     margin: 20px 0 0;
-    max-width: 15ch;                      /* SR-6 — stops well before the edge */
+    max-width: 20ch;                      /* SR-6 — stops well before the edge */
+    text-wrap: balance;                   /* even line lengths instead of a long/short ladder */
   }
-  h1 em { font-style: italic; color: var(--accent); }
+  /* the emphasised phrase is one unit — letting "still / yours" break across lines reads as a
+     typo, not as emphasis */
+  h1 em { font-style: italic; color: var(--accent); white-space: nowrap; }
+  @media (max-width: 460px) { h1 em { white-space: normal; } }
 
   .standfirst {
     margin: 18px 0 0; max-width: 54ch;

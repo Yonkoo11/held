@@ -3,6 +3,11 @@
 //
 //   node scripts/attack.js          (seller must be running with DEMO_BUY=on)
 //
+// WARNING: this runs against whatever seller SELLER_URL points at and its jobs land in that
+// seller's data directory. Run it against a test instance, not the one you are about to film:
+//   DATA_DIR=data-test PORT=4099 DEMO_BUY=on npm run seller
+//   SELLER_URL=http://localhost:4099 node scripts/attack.js
+//
 // Each case states the attack, the expected defence, and fails loudly if the defence is missing.
 const SELLER = process.env.SELLER_URL || 'http://localhost:4021';
 

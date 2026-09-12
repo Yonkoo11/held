@@ -8,7 +8,10 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-const FILE = path.join(process.cwd(), 'data', 'jobs.json');
+// Tests must not write into the demo's data. Set DATA_DIR to isolate a run.
+const DATA_DIR = path.join(process.cwd(), process.env.DATA_DIR || 'data');
+
+const FILE = path.join(DATA_DIR, 'jobs.json');
 
 function readAll() {
   try { return JSON.parse(fs.readFileSync(FILE, 'utf8')); } catch { return {}; }

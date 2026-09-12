@@ -47,7 +47,7 @@ async function waitFor(label, fn, timeoutMs, everyMs = 1000) {
 async function main() {
   console.log('\nStarting a seller for the regression run...');
   const seller = spawn(process.execPath, ['src/seller.js'], {
-    env: { ...process.env, PORT: String(PORT), DEMO_BUY: 'on',
+    env: { ...process.env, PORT: String(PORT), DEMO_BUY: 'on', DATA_DIR: 'data-test',
            REVIEW_MINUTES: String(REVIEW_SECONDS / 60) },
     stdio: ['ignore', 'pipe', 'pipe'],
   });
@@ -108,7 +108,7 @@ async function main() {
     seller.kill();
     await sleep(1500);
     const broken = spawn(process.execPath, ['src/seller.js'], {
-      env: { ...process.env, PORT: String(PORT), DEMO_BUY: 'on',
+      env: { ...process.env, PORT: String(PORT), DEMO_BUY: 'on', DATA_DIR: 'data-test',
              REVIEW_MINUTES: String(REVIEW_SECONDS / 60), SIMULATE_SCHEDULE_FAILURE: '1' },
       stdio: ['ignore', 'pipe', 'pipe'],
     });

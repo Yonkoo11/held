@@ -12,7 +12,7 @@ import { buildPaymentFor } from './payment.js';
 
 // The claim token is handed out once, at payment. Keep it: without it this CLI cannot decide on
 // its own jobs, which is the same rule that stops a stranger deciding on them.
-const TOKENS = path.join(process.cwd(), 'data', 'buyer-tokens.json');
+const TOKENS = path.join(process.cwd(), process.env.DATA_DIR || 'data', 'buyer-tokens.json');
 const readTokens = () => { try { return JSON.parse(fs.readFileSync(TOKENS, 'utf8')); } catch { return {}; } };
 function saveToken(jobId, token) {
   const t = readTokens(); t[jobId] = token;

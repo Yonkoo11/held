@@ -8,7 +8,7 @@
 //   silence  -> a scheduled transaction pays the seller at the review deadline
 import fs from 'node:fs';
 import path from 'node:path';
-import { settlementTier, payAsset } from './config.js';
+import { settlementTier, payAsset, MIRROR_NODE } from './config.js';
 
 const LEDGER = path.join(process.cwd(), 'data', 'escrow-ledger.json');
 
@@ -25,6 +25,9 @@ function writeLedger(l) {
 
 class LocalSettlement {
   constructor() { this.tier = settlementTier(); }
+  // Nothing executes a scheduled transfer for us here, so the seller's sweeper is the mechanism.
+  get schedulesOnChain() { return false; }
+  async scheduleStatus() { return { executed: false }; }
   async init() {
     this.account = 'local-escrow';
     return { escrow: this.account, degraded: true };
@@ -90,6 +93,25 @@ async function buildTransfer(from, to, units) {
 }
 
 class HederaSettlement {
+  // Hedera executes the scheduled release itself at expiry. The seller's sweeper must therefore
+  // NOT also transfer — doing both paid the seller twice for one job on 2026-09-12, visible on
+  // chain as two 0.05 HBAR debits from the escrow 13 seconds apart.
+  get schedulesOnChain() { return true; }
+
+  async scheduleStatus(scheduleId) {
+    if (!scheduleId) return { executed: false };
+    const r = await fetch(`${MIRROR_NODE}/api/v1/schedules/${encodeURIComponent(scheduleId)}`);
+    if (!r.ok) return { executed: false, unknown: true };
+    const d = await r.json();
+    if (!d.executed_timestamp) return { executed: false, deleted: Boolean(d.deleted) };
+    let txId = null;
+    try {
+      const t = await fetch(`${MIRROR_NODE}/api/v1/transactions?timestamp=${d.executed_timestamp}&limit=1`);
+      if (t.ok) txId = ((await t.json()).transactions || [])[0]?.transaction_id || null;
+    } catch { /* the timestamp alone is still evidence */ }
+    return { executed: true, executedAt: d.executed_timestamp, txId };
+  }
+
   constructor() {
     this.tier = settlementTier();
     this.account = process.env.HEDERA_ESCROW_ID || process.env.HEDERA_OPERATOR_ID;

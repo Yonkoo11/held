@@ -100,6 +100,43 @@ async function main() {
   results.push({ case: 'buyer rejects', job: job2.jobId, settleTx: job2.settleTx,
                  decisionTx: reject.json.tx, state: reject.json.state });
 
+  // ---- case 3: buyer says nothing, Hedera's scheduled transaction pays the seller -----------
+  // Only meaningful with a short review window: run the seller with REVIEW_MINUTES=1 for this.
+  const reviewMs = (health.reviewMinutes ?? 10) * 60 * 1000;
+  let deadlineCase = null;
+  if (reviewMs <= 3 * 60 * 1000) {
+    const q3 = 'Does the scheduled release pay the seller when the buyer says nothing?';
+    const r3 = await post('/work', { question: q3 });
+    const payment3 = await buildPaymentFor(r3.json.accepts[0]);
+    const paid3 = await post('/work', { question: q3 },
+      { 'X-PAYMENT': Buffer.from(JSON.stringify(payment3)).toString('base64') });
+    const job3 = paid3.json;
+    console.log(`[prove-live] job ${job3.jobId} paid, schedule ${job3.escrow.scheduleId}, expires ${job3.escrow.releasesAt}`);
+    console.log('[prove-live] waiting for the scheduled transaction to execute (not touching it)...');
+
+    const until = Date.now() + reviewMs + 150000;
+    let final = null;
+    while (Date.now() < until) {
+      const j = (await post(`/jobs/${job3.jobId}`, undefined)).json
+             ?? (await (await fetch(`${SELLER}/jobs/${job3.jobId}`)).json());
+      if (j.state === 'released') { final = j; break; }
+      await sleep(5000);
+    }
+    if (!final) {
+      console.log('[prove-live] the scheduled release did not land in time');
+    } else {
+      const byChain = (final.evidence || []).some((e) => e.payload?.by === 'hedera-scheduled-transaction');
+      console.log(`[prove-live] released by ${byChain ? 'the Hedera scheduled transaction' : 'the fallback sweep'}, tx ${final.decisionTx}`);
+      deadlineCase = { case: 'buyer says nothing', job: job3.jobId, settleTx: job3.settleTx,
+                       decisionTx: final.decisionTx, state: final.state,
+                       scheduleId: job3.escrow.scheduleId, byChain };
+      results.push(deadlineCase);
+    }
+  } else {
+    console.log(`[prove-live] skipping the deadline case — review window is ${reviewMs / 60000} min.`);
+    console.log('[prove-live] re-run with REVIEW_MINUTES=1 on the seller to include it.');
+  }
+
   // ---- verify against the ledger ------------------------------------------------------------
   const checks = [];
   if (live) {
@@ -144,6 +181,13 @@ async function main() {
     lines.push('## Independent mirror-node verification', '',
       '| job | what | transaction | found | result |', '|---|---|---|---|---|',
       ...checks.map((c) => `| \`${c.job.slice(0, 8)}\` | ${c.label} | \`${c.tx}\` | ${c.found ? 'yes' : 'NO'} | ${c.result || '-'} |`), '');
+  }
+  if (deadlineCase) {
+    lines.push('## The deadline case', '',
+      `The buyer was not asked and did nothing. Hedera's own scheduled transaction`,
+      `\`${deadlineCase.scheduleId}\` released the escrow at expiry` +
+      (deadlineCase.byChain ? ' — the service only observed it.' : ' (fallback sweep was used).'),
+      `Look it up: https://hashscan.io/testnet/schedule/${deadlineCase.scheduleId}`, '');
   }
   if (health.escrow && /^\d+\.\d+\.\d+$/.test(health.escrow)) {
     lines.push('## Look it up yourself', '',

@@ -17,6 +17,8 @@ import * as store from './store.js';
 const PORT = Number(process.env.PORT || 4021);
 const PRICE = Number(process.env.PRICE || process.env.PRICE_USDC || 0.05);
 const REVIEW_WINDOW_MS = Number(process.env.REVIEW_MINUTES || 10) * 60 * 1000;
+// How long past expiry we wait for Hedera's scheduled release before doing it ourselves.
+const SCHEDULE_GRACE_MS = Number(process.env.SCHEDULE_GRACE_SECONDS || 90) * 1000;
 
 const MAX_QUESTION_CHARS = Number(process.env.MAX_QUESTION_CHARS || 2000);
 // The browser demo spends the server's own buyer key. That is harmless against a local stand-in
@@ -174,6 +176,7 @@ app.get('/health', (_req, res) => res.json({
   status: 'ok', escrow, feePayer,
   evidenceTopic, facilitator: FACILITATOR_URL,
   price: PRICE, asset: payAsset(), agent: agentVersion(), tiers: tiers(),
+  reviewMinutes: REVIEW_WINDOW_MS / 60000,
 }));
 
 // Convenience for the browser demo: the page has no wallet, so the server walks the same 402 ->
@@ -373,6 +376,28 @@ app.get('/jobs', (_req, res) => res.json(store.list().map(publicJob)));
 async function sweep() {
   for (const job of store.list()) {
     if (job.state !== 'held' || Date.now() < job.deadline) continue;
+
+    // When the chain owns the release, the sweeper's job is to observe it, not to repeat it.
+    if (settlement.schedulesOnChain && job.scheduleId) {
+      const st = await settlement.scheduleStatus(job.scheduleId);
+      if (st.executed) {
+        const claim = store.transition(job.id, 'held', 'released', {
+          decisionReason: 'review window expired — released by the scheduled transaction',
+          decisionTx: st.txId, decidedAt: Date.now(),
+        });
+        if (claim.ok) {
+          await record(job.id, 'released', { reason: 'review window expired', tx: st.txId,
+                                             by: 'hedera-scheduled-transaction', scheduleId: job.scheduleId });
+          console.log(`[sweep] schedule ${job.scheduleId} executed for ${job.id}`);
+        }
+        continue;
+      }
+      // Give the network a grace period before assuming the schedule will never fire. Only then
+      // fall back to transferring ourselves, so a failed schedule cannot strand the seller's money.
+      if (Date.now() < job.deadline + SCHEDULE_GRACE_MS) continue;
+      console.log(`[sweep] schedule ${job.scheduleId} has not executed ${Math.round(SCHEDULE_GRACE_MS / 1000)}s past expiry — releasing directly`);
+    }
+
     const claim = store.transition(job.id, 'held', 'settling',
       { decisionReason: 'review window expired' });
     if (!claim.ok) continue;                       // a buyer decided first; leave it alone
@@ -380,7 +405,7 @@ async function sweep() {
       const r = await settlement.release(job.id, 'review window expired — auto-released');
       if (r.error) { store.transition(job.id, 'settling', 'held', {}); continue; }
       store.transition(job.id, 'settling', 'released', { decisionTx: r.txId, decidedAt: Date.now() });
-      await record(job.id, 'released', { reason: 'review window expired', tx: r.txId, by: 'deadline' });
+      await record(job.id, 'released', { reason: 'review window expired', tx: r.txId, by: 'deadline-sweep' });
       console.log(`[sweep] auto-released ${job.id}`);
     } catch (e) {
       store.transition(job.id, 'settling', 'held', {});

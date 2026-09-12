@@ -94,6 +94,20 @@ class HederaSettlement {
     this.tier = settlementTier();
     this.account = process.env.HEDERA_ESCROW_ID || process.env.HEDERA_OPERATOR_ID;
   }
+  // The escrow account has its own key. The client signs as the operator, so any transfer that
+  // DEBITS the escrow must also carry the escrow's signature or the network returns
+  // INVALID_SIGNATURE — which it did, on the first real run.
+  async #escrowKey() {
+    if (this._escrowKey) return this._escrowKey;
+    const { PrivateKey } = await import('@hiero-ledger/sdk');
+    const { resolveOperator } = await import('./hedera-key.js');
+    const raw = process.env.HEDERA_ESCROW_KEY;
+    if (!raw) throw new Error('HEDERA_ESCROW_KEY is not set — run: npm run go-live');
+    const { key } = await resolveOperator(PrivateKey, this.account, raw);
+    this._escrowKey = key;
+    return key;
+  }
+
   async #client() {
     if (this._client) return this._client;
     const { Client, PrivateKey, AccountId } = await import('@hiero-ledger/sdk');
@@ -141,12 +155,17 @@ class HederaSettlement {
     const h = l.held[jobId];
     const client = await this.#client();
     const inner = await buildTransfer(this.account, to, h.amount);
-    const rx = await (await new ScheduleCreateTransaction()
+    // Signing the ScheduleCreate with the escrow key supplies the scheduled transfer's required
+    // signature up front, so it can execute at expiry without anyone being online.
+    const escrowKey = await this.#escrowKey();
+    const scheduleTx = await new ScheduleCreateTransaction()
       .setScheduledTransaction(inner)
       .setScheduleMemo(`OutcomeLock auto-release ${jobId}`)
       .setWaitForExpiry(true)
       .setExpirationTime(Timestamp.fromDate(new Date(deadlineMs)))
-      .execute(client)).getReceipt(client);
+      .freezeWith(client)
+      .sign(escrowKey);
+    const rx = await (await scheduleTx.execute(client)).getReceipt(client);
     const scheduleId = rx.scheduleId.toString();
     h.scheduleId = scheduleId; h.scheduledTo = to; h.scheduledFor = deadlineMs;
     writeLedger(l);
@@ -162,9 +181,11 @@ class HederaSettlement {
       try { await new ScheduleDeleteTransaction().setScheduleId(h.scheduleId).execute(client); } catch { /* already gone */ }
     }
     const tx = await buildTransfer(this.account, h.scheduledTo, h.amount);
-    const rx = await (await tx.execute(client)).getReceipt(client);
+    const signed = await tx.freezeWith(client).sign(await this.#escrowKey());
+    const response = await signed.execute(client);
+    await response.getReceipt(client);          // throws unless consensus status is SUCCESS
     h.state = 'released'; h.reason = reason; writeLedger(l);
-    return { txId: rx.transactionId?.toString?.() ?? String(rx.status), degraded: false };
+    return { txId: response.transactionId.toString(), degraded: false };
   }
 
   async refund(jobId, reason) {
@@ -176,9 +197,11 @@ class HederaSettlement {
       try { await new ScheduleDeleteTransaction().setScheduleId(h.scheduleId).execute(client); } catch { /* already gone */ }
     }
     const tx = await buildTransfer(this.account, h.payer, h.amount);
-    const rx = await (await tx.execute(client)).getReceipt(client);
+    const signed = await tx.freezeWith(client).sign(await this.#escrowKey());
+    const response = await signed.execute(client);
+    await response.getReceipt(client);
     h.state = 'refunded'; h.reason = reason; writeLedger(l);
-    return { txId: rx.transactionId?.toString?.() ?? String(rx.status), degraded: false };
+    return { txId: response.transactionId.toString(), degraded: false };
   }
 
   async held(jobId) { return readLedger().held[jobId] || null; }

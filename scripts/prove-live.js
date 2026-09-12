@@ -22,6 +22,7 @@ async function post(path, body, headers = {}) {
 
 // The mirror node lags consensus by a second or two, so poll rather than assume.
 async function mirrorHasTransaction(txId, tries = 10) {
+  if (!txId) return { found: false, note: 'no transaction id — the step failed before submitting' };
   const normalised = txId.replace('@', '-').replace(/\.(\d+)$/, '-$1');
   for (let i = 0; i < tries; i++) {
     const r = await fetch(`${MIRROR_NODE}/api/v1/transactions/${normalised}`);
@@ -76,6 +77,9 @@ async function main() {
 
   const approve = await post(`/jobs/${job1.jobId}/approve`, { reason: 'answered the question' },
     { 'X-Job-Token': job1.claimToken });
+  if (approve.status !== 200) {
+    throw new Error(`approve failed (${approve.status}): ${approve.json?.error || 'no reason given'}`);
+  }
   console.log(`[prove-live] approved -> ${approve.json.state}, tx ${approve.json.tx}`);
   results.push({ case: 'buyer approves', job: job1.jobId, settleTx: job1.settleTx,
                  decisionTx: approve.json.tx, state: approve.json.state });
@@ -89,6 +93,9 @@ async function main() {
   const job2 = paid2.json;
   const reject = await post(`/jobs/${job2.jobId}/reject`, { reason: 'not specific enough' },
     { 'X-Job-Token': job2.claimToken });
+  if (reject.status !== 200) {
+    throw new Error(`reject failed (${reject.status}): ${reject.json?.error || 'no reason given'}`);
+  }
   console.log(`[prove-live] rejected -> ${reject.json.state}, tx ${reject.json.tx}`);
   results.push({ case: 'buyer rejects', job: job2.jobId, settleTx: job2.settleTx,
                  decisionTx: reject.json.tx, state: reject.json.state });

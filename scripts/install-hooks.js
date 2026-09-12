@@ -12,8 +12,11 @@ const HOOK = `#!/bin/sh
 
 fail=0
 
-# 1. Never commit an environment file, whatever it is called.
-names=$(git diff --cached --name-only --diff-filter=ACM | grep -E '(^|/)\\.env($|\\.)' || true)
+# 1. Never commit an environment file — but templates (.env.example / .sample / .template / .dist)
+#    carry no secrets and are meant to be committed.
+names=$(git diff --cached --name-only --diff-filter=ACM \
+  | grep -E '(^|/)\\.env($|\\.)' \
+  | grep -vE '\\.(example|sample|template|dist)$' || true)
 if [ -n "$names" ]; then
   echo "BLOCKED: refusing to commit an environment file:"
   echo "$names" | sed 's/^/    /'

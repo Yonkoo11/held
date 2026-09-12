@@ -67,6 +67,7 @@ The third row is the one that makes this safe for sellers. Silence is not a veto
 | `src/evidence.js` | the append-only trail. HCS topic, or a local file on the degraded tier |
 | `src/worker.js` | the agent doing the paid work, and the version id that identifies it |
 | `src/payment.js` | builds the `X-PAYMENT` payload |
+| `src/hedera-key.js` | resolves and verifies the operator key against the ledger, instead of guessing its type |
 | `src/buyer.js` | the consuming agent, as a CLI |
 | `scripts/go-live.js` | one command to create the escrow/buyer accounts and the evidence topic |
 | `scripts/prove-live.js` | runs every path, then independently re-reads the mirror node to check it actually happened. Writes `PROOF.md` |
@@ -121,7 +122,8 @@ npm run check:secrets # confirm nothing can leak before you put a key anywhere
 | `npm run buyer -- ask "..."` | the consuming agent |
 | `npm run go-live` | create the Hedera accounts and evidence topic |
 | `npm run prove` | run every path, verify against the mirror node, write `PROOF.md` |
-| `npm test` | offline transaction build + the three endings, end to end |
+| `npm test` | offline transaction build + key handling + the three endings |
+| `npm run test:keys` | key parsing across both key types and all three formats |
 | `npm run regression` | the three endings, polled rather than timed |
 | `npm run attack` | 16 adversarial checks |
 | `npm run dryrun` | build every Hedera transaction offline, no account needed |
@@ -144,6 +146,14 @@ nothing whatsoever about Hedera.
    with test HBAR.
 2. Copy `.env.example` to `.env` and fill in `HEDERA_OPERATOR_ID` and `HEDERA_OPERATOR_KEY`.
    Edit the file directly — never paste a key into a chat window.
+
+   Any key format works: ECDSA or ED25519, DER or raw hex, `0x`-prefixed or not. You do not need
+   to know which you have. This matters more than it sounds: the portal issues **ECDSA** by
+   default, and `PrivateKey.fromStringED25519()` accepts a raw ECDSA key *without complaint* and
+   returns a different key — the mistake then surfaces as `INVALID_SIGNATURE` from the network,
+   which reads like a connectivity fault. So the app asks the mirror node what key the account
+   actually has, parses to match, verifies the private key really derives that public key, and
+   refuses to start with a sentence telling you what to fix if it does not.
 3. ```bash
    node --env-file=.env scripts/go-live.js
    ```

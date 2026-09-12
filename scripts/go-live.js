@@ -9,6 +9,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { MIRROR_NODE, payAsset } from '../src/config.js';
+import { resolveOperator } from '../src/hedera-key.js';
 
 const ENV_FILE = path.join(process.cwd(), process.env.ENV_FILE || '.env');
 const need = (k) => {
@@ -31,20 +32,23 @@ function appendEnv(lines) {
   fs.writeFileSync(ENV_FILE, keep + lines.join('\n') + '\n', { mode: 0o600 });
 }
 
-async function operatorBalance(id) {
-  const r = await fetch(`${MIRROR_NODE}/api/v1/accounts/${id}`);
-  if (!r.ok) throw new Error(`mirror node does not know account ${id} (http ${r.status}) — is the id right, and is it a testnet account?`);
-  const d = await r.json();
-  return Number(d.balance?.balance || 0) / 1e8;
-}
-
 async function main() {
   const operatorId = need('HEDERA_OPERATOR_ID');
   const operatorKey = need('HEDERA_OPERATOR_KEY');
   const asset = payAsset();
 
   console.log(`[go-live] operator ${operatorId}`);
-  const bal = await operatorBalance(operatorId);
+
+  const { PrivateKey: PK } = await import('@hiero-ledger/sdk');
+  let operator;
+  try {
+    operator = await resolveOperator(PK, operatorId, operatorKey);
+  } catch (e) {
+    console.error(`\n[go-live] ${e.message}\n`);
+    process.exit(1);
+  }
+  console.log(`[go-live] key verified against the ledger: ${operator.type}, supplied as ${operator.format}`);
+  const bal = operator.balanceHbar;
   console.log(`[go-live] operator balance: ${bal} HBAR`);
   if (bal < HBAR_FUNDING * 2 + 5) {
     console.error(`[go-live] not enough HBAR to fund two accounts (need about ${HBAR_FUNDING * 2 + 5}).`);
@@ -58,7 +62,7 @@ async function main() {
   } = await import('@hiero-ledger/sdk');
 
   const client = Client.forTestnet();
-  client.setOperator(AccountId.fromString(operatorId), PrivateKey.fromStringED25519(operatorKey));
+  client.setOperator(AccountId.fromString(operatorId), operator.key);
 
   async function createAccount(label) {
     const key = PrivateKey.generateED25519();

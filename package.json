@@ -23,6 +23,7 @@
     "check:secrets": "node scripts/check-secrets.js",
     "postinstall": "node scripts/install-hooks.js || true",
     "regression": "node scripts/regression.js",
-    "test": "node scripts/dryrun-hedera.js && node scripts/regression.js"
+    "test": "node scripts/dryrun-hedera.js && node scripts/test-keys.js && node scripts/regression.js",
+    "test:keys": "node scripts/test-keys.js"
   }
 }

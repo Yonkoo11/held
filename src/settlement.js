@@ -95,10 +95,16 @@ class HederaSettlement {
     this.account = process.env.HEDERA_ESCROW_ID || process.env.HEDERA_OPERATOR_ID;
   }
   async #client() {
+    if (this._client) return this._client;
     const { Client, PrivateKey, AccountId } = await import('@hiero-ledger/sdk');
+    const { resolveOperator } = await import('./hedera-key.js');
+    // Verified against the ledger once, then cached: a raw ECDSA key parsed as ED25519 succeeds
+    // silently and only fails later as INVALID_SIGNATURE.
+    const operator = await resolveOperator(PrivateKey, process.env.HEDERA_OPERATOR_ID,
+                                           process.env.HEDERA_OPERATOR_KEY);
     const c = Client.forTestnet();
-    c.setOperator(AccountId.fromString(process.env.HEDERA_OPERATOR_ID),
-                  PrivateKey.fromStringED25519(process.env.HEDERA_OPERATOR_KEY));
+    c.setOperator(AccountId.fromString(process.env.HEDERA_OPERATOR_ID), operator.key);
+    this._client = c;
     return c;
   }
   async init() {

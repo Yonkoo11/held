@@ -34,9 +34,9 @@ class LocalSettlement {
   }
   escrowAccount() { return this.account; }
 
-  async recordDeposit(jobId, { payer, amount, asset }) {
+  async recordDeposit(jobId, { payer, amount, asset, releasesTo }) {
     const l = readLedger();
-    l.held[jobId] = { payer, amount, asset, at: Date.now(), state: 'held' };
+    l.held[jobId] = { payer, amount, asset, releasesTo, scheduledTo: releasesTo, at: Date.now(), state: 'held' };
     l.entries.push({ jobId, kind: 'deposit', amount, payer, at: Date.now(), tier: 'local-standin' });
     writeLedger(l);
     return { txId: `local-deposit-${jobId}`, degraded: true };
@@ -59,7 +59,7 @@ class LocalSettlement {
     const h = l.held[jobId];
     if (!h) return { txId: null, error: 'nothing held for this job' };
     h.state = 'released'; h.reason = reason;
-    l.entries.push({ jobId, kind: 'release', amount: h.amount, to: h.scheduledTo, reason, at: Date.now(), tier: 'local-standin' });
+    l.entries.push({ jobId, kind: 'release', amount: h.amount, to: h.scheduledTo || h.releasesTo, reason, at: Date.now(), tier: 'local-standin' });
     writeLedger(l);
     return { txId: `local-release-${jobId}`, degraded: true };
   }
@@ -166,10 +166,11 @@ class HederaSettlement {
   }
   escrowAccount() { return this.account; }
 
-  async recordDeposit(jobId, { payer, amount, asset, txId }) {
+  async recordDeposit(jobId, { payer, amount, asset, txId, releasesTo }) {
     // The x402 settlement already moved the funds into the escrow account; nothing to send here.
     const l = readLedger();
-    l.held[jobId] = { payer, amount, asset, txId, at: Date.now(), state: 'held' };
+    l.held[jobId] = { payer, amount, asset, txId, releasesTo, scheduledTo: releasesTo,
+                      at: Date.now(), state: 'held' };
     writeLedger(l);
     return { txId, degraded: false };
   }
@@ -210,7 +211,9 @@ class HederaSettlement {
     if (h.scheduleId) {
       try { await new ScheduleDeleteTransaction().setScheduleId(h.scheduleId).execute(client); } catch { /* already gone */ }
     }
-    const tx = await buildTransfer(this.account, h.scheduledTo, h.amount);
+    const to = h.scheduledTo || h.releasesTo;
+    if (!to) return { txId: null, error: 'no payout destination recorded for this job' };
+    const tx = await buildTransfer(this.account, to, h.amount);
     const signed = await tx.freezeWith(client).sign(await this.#escrowKey());
     const response = await signed.execute(client);
     await response.getReceipt(client);          // throws unless consensus status is SUCCESS

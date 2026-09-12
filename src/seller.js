@@ -275,6 +275,7 @@ app.post('/work', rateLimit(20, 60000), async (req, res) => {
   await settlement.recordDeposit(jobId, {
     payer, amount: paymentRequirements.amount, asset: paymentRequirements.asset,
     txId: settle.json.transaction,
+    releasesTo: sellerPayout,          // known now; release must not depend on the async arming step
   });
 
   const job = store.put({
@@ -296,18 +297,24 @@ app.post('/work', rateLimit(20, 60000), async (req, res) => {
     createdAt: Date.now(), updatedAt: Date.now(),
   });
 
-  // Best effort. If the chain will not take the schedule, the job is still held and the sweeper
-  // releases it at the deadline instead — a lost timer costs a mechanism, not the buyer's money.
-  let scheduled = { scheduleId: null };
-  try {
-    scheduled = await settlement.scheduleRelease(jobId, { to: sellerPayout, deadlineMs: deadline });
-    store.patch?.(jobId, { scheduleId: scheduled.scheduleId });
-    job.scheduleId = scheduled.scheduleId;
-  } catch (e) {
-    console.error(`[work] could not arm the auto-release for ${jobId}: ${e.message}`);
-    console.error('[work] the job is held and the deadline sweep will release it instead.');
-    await record(jobId, 'schedule-failed', { error: String(e.message).slice(0, 200) });
-  }
+  // Arming the timer is a second Hedera round trip and the buyer does not need to wait for it: the
+  // job already exists and is held, and the sweeper covers a failure to arm. Measured at ~6s, which
+  // is 6s the buyer spent staring at a spinner. Off the critical path.
+  const scheduled = { scheduleId: null };
+  const arming = settlement.scheduleRelease(jobId, { to: sellerPayout, deadlineMs: deadline })
+    .then(async (r) => {
+      store.patch(jobId, { scheduleId: r.scheduleId });
+      await record(jobId, 'escrow-scheduled', {
+        scheduleId: r.scheduleId, releasesTo: sellerPayout, armedOnChain: true,
+        deadline: new Date(deadline).toISOString(),
+      });
+    })
+    .catch(async (e) => {
+      console.error(`[work] could not arm the auto-release for ${jobId}: ${e.message}`);
+      console.error('[work] the job is held and the deadline sweep will release it instead.');
+      await record(jobId, 'schedule-failed', { error: String(e.message).slice(0, 200) });
+    });
+  arming.catch(() => {});
 
   await record(jobId, 'paid', {
     payer, amount: paymentRequirements.amount, asset: paymentRequirements.asset,
@@ -317,12 +324,6 @@ app.post('/work', rateLimit(20, 60000), async (req, res) => {
     questionHash: sha256(question), deliverableHash: job.deliverableHash,
     agentVersion: work.agentVersion, workerTier: work.workerTier, model: work.model,
   });
-  await record(jobId, 'escrow-scheduled', {
-    scheduleId: scheduled.scheduleId, releasesTo: sellerPayout,
-    armedOnChain: Boolean(scheduled.scheduleId),
-    deadline: new Date(deadline).toISOString(),
-  });
-
   res.set('X-PAYMENT-RESPONSE', Buffer.from(JSON.stringify(settle.json)).toString('base64'));
   res.json({
     jobId,

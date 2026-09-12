@@ -1,0 +1,26 @@
+{
+  "status": "complete",
+  "note": "No conductor state files exist for this project — it was not built through that pipeline. Footguns were found by walking and timing the real demo rather than by reading .wire-state.json.",
+  "phase_ledger": [
+    { "phase": "footgun_inventory", "evidence": "DEMO-FOOTGUNS.md — 8 footguns, 1 CRITICAL (Gemini 20/day), 3 HIGH, found by running the demo" },
+    { "phase": "wow_verification", "evidence": "6 of 6 wow moments verified against the live deploy with real credentials; tx ids in PROOF.md" },
+    { "phase": "recording_env_checklist", "evidence": "audio_strategy NOT locked — needs Dami; native recommended" },
+    { "phase": "pre_recording_checklist", "evidence": "DEMO-SCRIPT.md pre-recording section, 8 items incl. warm-up request and second seller on 4099" },
+    { "phase": "script_generation", "evidence": "DEMO-SCRIPT.md — 7 steps, ~150s, [SUB] chunks, measured timings" },
+    { "phase": "post_recording_deliverables", "evidence": "recordings manifest deferred until audio_strategy is chosen" },
+    { "phase": "state_write", "evidence": ".demo-rehearsal-state.json written" }
+  ],
+  "footguns_critical": 1,
+  "footguns_high": 3,
+  "footguns_acknowledged": true,
+  "wow_moments_total": 6,
+  "wow_moments_verified": 6,
+  "wow_moments_degraded": 0,
+  "wow_moments_broken": 0,
+  "audio_strategy": null,
+  "pacing_mode": null,
+  "demo_script_path": "DEMO-SCRIPT.md",
+  "footguns_path": "DEMO-FOOTGUNS.md",
+  "measured_timings_ms": { "quote": 4177, "pay_to_deliverable_cold": 31748, "pay_to_deliverable_warm": 17448, "approve_to_released": 3055 },
+  "timestamp": "2026-09-12T16:00:00Z"
+}

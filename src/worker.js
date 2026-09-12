@@ -112,6 +112,18 @@ async function openAIOnce(question) {
 
 // Google AI Studio. The key goes in a header, never the query string, so it cannot end up in a
 // proxy log or an error URL.
+// Once a provider says it is out of credit, it will still be out of credit on the next request.
+// Re-asking cost ~7s of dead time per call. Remember it for the life of the process; a restart is
+// the natural way to re-check after topping up.
+const DEAD = new Map();
+const isDead = (tier) => DEAD.has(tier);
+function markDead(tier, why) {
+  if (!DEAD.has(tier)) console.log(`[worker] ${tier} is out of credit or quota — skipping it from now on`);
+  DEAD.set(tier, why);
+}
+const terminal = (msg) =>
+  /insufficient_quota|no credits|credit balance|PerDay|RequestsPerDay|invalid_api_key|401|403/i.test(String(msg));
+
 // Transient upstream failures are normal and must not cost the tier. Observed against Gemini on
 // 2026-09-12: intermittent 503 on an otherwise healthy key, two calls in three.
 async function withRetry(label, fn, tries = 3) {
@@ -120,9 +132,10 @@ async function withRetry(label, fn, tries = 3) {
     try { return await fn(); } catch (e) {
       last = e;
       const msg = String(e.message);
-      // A per-DAY quota will not clear in a few seconds. Retrying it just wastes the demo's time
-      // and delays the fall-through to a tier that can actually answer.
-      if (/PerDay|RequestsPerDay/i.test(msg)) throw e;
+      // Not every 429 is a rate limit. "insufficient_quota" / "no credits" / a per-DAY cap are
+      // billing states that will not clear in seconds, and retrying them cost 10s of on-camera dead
+      // time before the request fell through to a provider that could actually answer.
+      if (/PerDay|RequestsPerDay|insufficient_quota|no credits|credit balance|billing/i.test(msg)) throw e;
       const retryable = /\b(429|500|502|503|504)\b|overload|unavailable|fetch failed/i.test(msg);
       if (!retryable || i === tries) throw e;
       // Honour the provider's own retry hint when it gives one.
@@ -249,6 +262,10 @@ export async function doWork(question) {
         ms: Date.now() - started,
       };
     }
+    if (isDead(tier.name)) {
+      attempted.push({ tier: tier.name, error: `skipped — ${DEAD.get(tier.name)}` });
+      continue;
+    }
     const run = RUNNERS[tier.name];
     if (!run) {
       attempted.push({ tier: tier.name, error: 'no runner implemented' });
@@ -270,7 +287,9 @@ export async function doWork(question) {
       };
     } catch (e) {
       // A dead key costs a tier, never the demo. Try the next provider down.
-      attempted.push({ tier: tier.name, error: redact(String(e.message || e)).slice(0, 200) });
+      const why = redact(String(e.message || e)).slice(0, 200);
+      if (terminal(why)) markDead(tier.name, 'out of credit or quota');
+      attempted.push({ tier: tier.name, error: why });
     }
   }
   throw new Error('unreachable: the deterministic tier is always last');

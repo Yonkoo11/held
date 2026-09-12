@@ -117,8 +117,7 @@ async function main() {
     const until = Date.now() + reviewMs + 150000;
     let final = null;
     while (Date.now() < until) {
-      const j = (await post(`/jobs/${job3.jobId}`, undefined)).json
-             ?? (await (await fetch(`${SELLER}/jobs/${job3.jobId}`)).json());
+      const j = await (await fetch(`${SELLER}/jobs/${job3.jobId}`)).json();
       if (j.state === 'released') { final = j; break; }
       await sleep(5000);
     }

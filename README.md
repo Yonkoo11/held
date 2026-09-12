@@ -121,6 +121,8 @@ npm run check:secrets # confirm nothing can leak before you put a key anywhere
 | `npm run buyer -- ask "..."` | the consuming agent |
 | `npm run go-live` | create the Hedera accounts and evidence topic |
 | `npm run prove` | run every path, verify against the mirror node, write `PROOF.md` |
+| `npm test` | offline transaction build + the three endings, end to end |
+| `npm run regression` | the three endings, polled rather than timed |
 | `npm run attack` | 16 adversarial checks |
 | `npm run dryrun` | build every Hedera transaction offline, no account needed |
 | `npm run check:secrets` | audit secret hygiene |

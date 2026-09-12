@@ -21,6 +21,8 @@
     "attack": "node scripts/attack.js",
     "dryrun": "node scripts/dryrun-hedera.js",
     "check:secrets": "node scripts/check-secrets.js",
-    "postinstall": "node scripts/install-hooks.js || true"
+    "postinstall": "node scripts/install-hooks.js || true",
+    "regression": "node scripts/regression.js",
+    "test": "node scripts/dryrun-hedera.js && node scripts/regression.js"
   }
 }

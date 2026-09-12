@@ -21,6 +21,38 @@ const MODELS = {
   deterministic: 'none',
 };
 
+// An upstream error can echo request details back at us. It is stored on the job and the job is
+// served publicly, so nothing secret-shaped may survive this, and the public form is a category
+// rather than the provider's prose.
+const SECRET_SHAPES = [
+  /sk-ant-[A-Za-z0-9_-]{6,}/g, /\bsk-[A-Za-z0-9]{12,}/g, /\bAIza[0-9A-Za-z_-]{10,}/g,
+  /302e020100300506032b6570[0-9a-f]{10,}/gi, /\bAKIA[0-9A-Z]{10,}/g,
+  /\b[A-Fa-f0-9]{40,}\b/g,                    // long hex: keys, seeds, raw material
+  /\bBearer\s+[A-Za-z0-9._-]{10,}/gi,
+];
+function redact(text) {
+  let out = String(text);
+  for (const re of SECRET_SHAPES) out = out.replace(re, '[REDACTED]');
+  return out;
+}
+
+// What a buyer is allowed to know: that a tier was lost, and roughly why. Never the provider's
+// raw response.
+function classify(err) {
+  const e = String(err).toLowerCase();
+  if (e.includes('credit balance') || e.includes('quota') || e.includes('billing')) {
+    return 'the model provider refused on billing or quota';
+  }
+  if (e.includes('401') || e.includes('403') || e.includes('unauthor')) {
+    return 'the model provider rejected our credentials';
+  }
+  if (e.includes('429')) return 'the model provider rate-limited us';
+  if (e.includes('timeout') || e.includes('econnrefused') || e.includes('fetch failed')) {
+    return 'the model provider was unreachable';
+  }
+  return 'the model provider failed';
+}
+
 export function agentVersion() {
   const tier = workerTier();
   const src = fs.readFileSync(fileURLToPath(import.meta.url), 'utf8');
@@ -89,7 +121,7 @@ export async function doWork(question) {
     else output = runDeterministic(question);
   } catch (e) {
     // A dead key must not take the demo down; it costs a tier and says so.
-    failedOver = String(e.message || e).slice(0, 300);
+    failedOver = redact(String(e.message || e)).slice(0, 300);
     output = runDeterministic(question);
   }
   return {
@@ -98,7 +130,8 @@ export async function doWork(question) {
     workerTier: failedOver ? 'deterministic (failed over)' : tier.name,
     model: failedOver ? 'none' : version.model,
     degraded: failedOver ? true : tier.degraded,
-    failedOver,
+    failedOver,                                        // redacted, for the operator's logs
+    failedOverPublic: failedOver ? classify(failedOver) : null,   // safe to serve to a buyer
     ms: Date.now() - started,
   };
 }

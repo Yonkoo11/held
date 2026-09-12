@@ -277,7 +277,8 @@ app.post('/work', rateLimit(20, 60000), async (req, res) => {
     deliverableHash: sha256(work.output),
     agentVersion: work.agentVersion,
     workerTier: work.workerTier, model: work.model, workerDegraded: work.degraded,
-    failedOver: work.failedOver,
+    failedOver: work.failedOver,                 // stripped before the job is served, see publicJob
+    failedOverPublic: work.failedOverPublic,
     settleTx: settle.json.transaction,
     scheduleId: scheduled.scheduleId,
     escrow, state: 'held', deadline,
@@ -354,7 +355,9 @@ async function decide(req, res, action) {
 app.post('/jobs/:id/approve', rateLimit(30, 60000), (req, res) => decide(req, res, 'approve'));
 app.post('/jobs/:id/reject', rateLimit(30, 60000), (req, res) => decide(req, res, 'reject'));
 
-const publicJob = ({ claimTokenHash, ...rest }) => rest;
+// Whatever else changes, these two never leave the server: the token hash authorises spending,
+// and the upstream error is the provider's prose rather than ours.
+const publicJob = ({ claimTokenHash, failedOver, ...rest }) => rest;
 
 app.get('/jobs/:id', async (req, res) => {
   const job = store.get(req.params.id);

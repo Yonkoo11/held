@@ -111,8 +111,19 @@ approving when they release the money.
 ## Setup
 
 ```bash
-npm install
+npm install          # also installs the pre-commit secret guard
+npm run check:secrets # confirm nothing can leak before you put a key anywhere
 ```
+
+| command | what it does |
+|---|---|
+| `npm run seller` | start the service |
+| `npm run buyer -- ask "..."` | the consuming agent |
+| `npm run go-live` | create the Hedera accounts and evidence topic |
+| `npm run prove` | run every path, verify against the mirror node, write `PROOF.md` |
+| `npm run attack` | 16 adversarial checks |
+| `npm run dryrun` | build every Hedera transaction offline, no account needed |
+| `npm run check:secrets` | audit secret hygiene |
 
 ### Run it without any account (degraded tier)
 
@@ -162,10 +173,30 @@ mirror node for each transaction id and fails loudly if one cannot be found.
 
 ---
 
+## Secrets
+
+Nothing secret belongs in this repository, and three independent things enforce that rather than
+one:
+
+- **`.gitignore`** keeps the environment file out. That handles the file you expect.
+- **A pre-commit guard** (`node scripts/install-hooks.js`, run automatically on `npm install`)
+  refuses any commit containing an environment file, a Hedera DER key, an Anthropic/OpenAI/Google/AWS
+  key shape, a PEM private key block, or the runtime files holding buyer claim tokens. That handles
+  the file you don't expect — a key pasted into a README or a scratch script. It prints the file, never
+  the value. Verified by staging a fake key and watching the commit be refused.
+- **`npm run check:secrets`** audits the whole setup: file permissions, whether git ignores and is
+  not tracking it, secret-shaped strings across every tracked file *and the entire git history*, and
+  whether the guard is installed. It prints variable names and lengths, never values, so it is safe
+  to run with somebody watching.
+
+The environment file is `chmod 600`. Keys go into it by editing it directly — never through a chat
+window, a screenshot, or a note app. `scripts/go-live.js` writes the accounts it creates straight
+into that file and prints only public ids.
+
 ## Security
 
 This service moves money, so it gets reviewed like something that moves money. `scripts/attack.js`
-is a re-runnable harness of the checks; all 11 pass as of 2026-09-12.
+is a re-runnable harness of the checks; all 16 pass as of 2026-09-12.
 
 Two real defects were found this way and fixed, both worth knowing about if you build something
 similar:
@@ -186,7 +217,9 @@ atomic compare-and-set in `src/store.js` that claims a job *before* any transfer
 Also closed: the evidence trail can no longer fail a request whose funds have already moved (a lost
 log line is bad, a 500 after the money moved is worse); `/demo/buy` spends the server's own account
 so it is refused on a live tier unless explicitly enabled; per-IP rate limits on every paid route;
-and an input cap.
+an input cap; and upstream model-provider errors are redacted and replaced with a safe category
+before they reach a buyer, because providers echo request details back in error bodies and those
+job records are served publicly.
 
 ## Honest status
 

@@ -77,6 +77,16 @@ async function main() {
   const single = await req(`/jobs/${b.json.jobId}`);
   check('single job view does not expose it either', !JSON.stringify(single.json).includes('claimTokenHash'));
 
+  // 5b — upstream error text must not reach a buyer. Providers echo request details in errors.
+  console.log('5b. reading a job that failed over to a lower worker tier');
+  const both = JSON.stringify([feed.json, single.json]);
+  check('raw upstream error text is not served', !both.includes('"failedOver"'));
+  check('a safe reason is served instead',
+    !single.json.failedOverPublic || typeof single.json.failedOverPublic === 'string');
+  for (const shape of [/sk-ant-[A-Za-z0-9_-]{6,}/, /\bsk-[A-Za-z0-9]{12,}/, /302e020100300506032b6570/i]) {
+    check(`no ${shape.source.slice(0, 18)}… shaped string in the public job feed`, !shape.test(both));
+  }
+
   // 6 — cost amplification. Every request runs a model and moves money.
   console.log('6. oversized input');
   const big = await req('/work', { method: 'POST', body: { question: 'x'.repeat(50000) } });

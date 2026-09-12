@@ -14,7 +14,13 @@
     "express": "^5.2.1"
   },
   "scripts": {
-    "seller": "node src/seller.js",
-    "buyer": "node src/buyer.js"
+    "seller": "node --env-file-if-exists=.env src/seller.js",
+    "buyer": "node --env-file-if-exists=.env src/buyer.js",
+    "go-live": "node --env-file-if-exists=.env scripts/go-live.js",
+    "prove": "node --env-file-if-exists=.env scripts/prove-live.js",
+    "attack": "node scripts/attack.js",
+    "dryrun": "node scripts/dryrun-hedera.js",
+    "check:secrets": "node scripts/check-secrets.js",
+    "postinstall": "node scripts/install-hooks.js || true"
   }
 }

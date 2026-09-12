@@ -4,6 +4,21 @@
 
 export const HEDERA_TESTNET_USDC = '0.0.429274';   // verified on the mirror node 2026-09-10
 export const HEDERA_USDC_DECIMALS = 6;
+export const HBAR_ASSET_ID = '0.0.0';              // the scheme's id for native HBAR
+export const HBAR_DECIMALS = 8;                    // tinybars
+
+// Which asset the service charges in.
+//
+// Default is HBAR, and that is a deliberate call: a fresh testnet account is funded with HBAR
+// automatically, whereas testnet USDC needs a separate faucet we have not found one of. Pricing in
+// HBAR means the only human step in this whole project is the portal signup. USDC still works —
+// set PAY_ASSET=usdc once an account actually holds some.
+export function payAsset() {
+  const choice = (process.env.PAY_ASSET || 'hbar').toLowerCase();
+  return choice === 'usdc'
+    ? { id: HEDERA_TESTNET_USDC, decimals: HEDERA_USDC_DECIMALS, symbol: 'USDC', isHbar: false }
+    : { id: HBAR_ASSET_ID, decimals: HBAR_DECIMALS, symbol: 'HBAR', isHbar: true };
+}
 export const HEDERA_CAIP2 = 'hedera:testnet';
 export const FACILITATOR_URL = process.env.FACILITATOR_URL || 'https://api.testnet.blocky402.com';
 export const MIRROR_NODE = 'https://testnet.mirrornode.hedera.com';

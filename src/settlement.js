@@ -8,12 +8,12 @@
 //   silence  -> a scheduled transaction pays the seller at the review deadline
 import fs from 'node:fs';
 import path from 'node:path';
-import { settlementTier, HEDERA_TESTNET_USDC, HEDERA_USDC_DECIMALS } from './config.js';
+import { settlementTier, payAsset } from './config.js';
 
 const LEDGER = path.join(process.cwd(), 'data', 'escrow-ledger.json');
 
-export const toUnits = (usdc) => String(Math.round(Number(usdc) * 10 ** HEDERA_USDC_DECIMALS));
-export const fromUnits = (units) => Number(units) / 10 ** HEDERA_USDC_DECIMALS;
+export const toUnits = (amount) => String(Math.round(Number(amount) * 10 ** payAsset().decimals));
+export const fromUnits = (units) => Number(units) / 10 ** payAsset().decimals;
 
 function readLedger() {
   try { return JSON.parse(fs.readFileSync(LEDGER, 'utf8')); } catch { return { held: {}, entries: [] }; }
@@ -74,6 +74,21 @@ class LocalSettlement {
 
 // UNRUN as of 2026-09-10 — no Hedera operator key has existed on this machine yet. Every method
 // below is written against the SDK but has never executed. Do not claim it works.
+async function buildTransfer(from, to, units) {
+  const { TransferTransaction, AccountId, TokenId, Hbar, HbarUnit } = await import('@hiero-ledger/sdk');
+  const asset = payAsset();
+  const tx = new TransferTransaction();
+  if (asset.isHbar) {
+    tx.addHbarTransfer(AccountId.fromString(from), Hbar.from(-Number(units), HbarUnit.Tinybar));
+    tx.addHbarTransfer(AccountId.fromString(to), Hbar.from(Number(units), HbarUnit.Tinybar));
+  } else {
+    const token = TokenId.fromString(asset.id);
+    tx.addTokenTransfer(token, AccountId.fromString(from), -Number(units));
+    tx.addTokenTransfer(token, AccountId.fromString(to), Number(units));
+  }
+  return tx;
+}
+
 class HederaSettlement {
   constructor() {
     this.tier = settlementTier();
@@ -89,12 +104,14 @@ class HederaSettlement {
   async init() {
     // The escrow account must be associated with testnet USDC or the x402 preflight rejects the
     // payment before it is ever attempted. See CLAUDE.md, "HTS association is a real trap".
+    const asset = payAsset();
+    if (asset.isHbar) return { escrow: this.account, degraded: false };  // HBAR needs no association
     const { TokenAssociateTransaction, AccountId, TokenId } = await import('@hiero-ledger/sdk');
     const client = await this.#client();
     try {
       await new TokenAssociateTransaction()
         .setAccountId(AccountId.fromString(this.account))
-        .setTokenIds([TokenId.fromString(HEDERA_TESTNET_USDC)])
+        .setTokenIds([TokenId.fromString(asset.id)])
         .execute(client);
     } catch (e) {
       // Already associated is the common and harmless case.
@@ -113,14 +130,11 @@ class HederaSettlement {
   }
 
   async scheduleRelease(jobId, { to, deadlineMs }) {
-    const { ScheduleCreateTransaction, TransferTransaction, AccountId, TokenId, Timestamp } =
-      await import('@hiero-ledger/sdk');
+    const { ScheduleCreateTransaction, Timestamp } = await import('@hiero-ledger/sdk');
     const l = readLedger();
     const h = l.held[jobId];
     const client = await this.#client();
-    const inner = new TransferTransaction()
-      .addTokenTransfer(TokenId.fromString(HEDERA_TESTNET_USDC), AccountId.fromString(this.account), -Number(h.amount))
-      .addTokenTransfer(TokenId.fromString(HEDERA_TESTNET_USDC), AccountId.fromString(to), Number(h.amount));
+    const inner = await buildTransfer(this.account, to, h.amount);
     const rx = await (await new ScheduleCreateTransaction()
       .setScheduledTransaction(inner)
       .setScheduleMemo(`OutcomeLock auto-release ${jobId}`)
@@ -134,33 +148,29 @@ class HederaSettlement {
   }
 
   async release(jobId, reason) {
-    const { TransferTransaction, ScheduleDeleteTransaction, AccountId, TokenId } = await import('@hiero-ledger/sdk');
+    const { ScheduleDeleteTransaction } = await import('@hiero-ledger/sdk');
     const l = readLedger(); const h = l.held[jobId];
     if (!h || h.state !== 'held') return { txId: null, error: 'nothing held for this job' };
     const client = await this.#client();
     if (h.scheduleId) {
       try { await new ScheduleDeleteTransaction().setScheduleId(h.scheduleId).execute(client); } catch { /* already gone */ }
     }
-    const rx = await (await new TransferTransaction()
-      .addTokenTransfer(TokenId.fromString(HEDERA_TESTNET_USDC), AccountId.fromString(this.account), -Number(h.amount))
-      .addTokenTransfer(TokenId.fromString(HEDERA_TESTNET_USDC), AccountId.fromString(h.scheduledTo), Number(h.amount))
-      .execute(client)).getReceipt(client);
+    const tx = await buildTransfer(this.account, h.scheduledTo, h.amount);
+    const rx = await (await tx.execute(client)).getReceipt(client);
     h.state = 'released'; h.reason = reason; writeLedger(l);
     return { txId: rx.transactionId?.toString?.() ?? String(rx.status), degraded: false };
   }
 
   async refund(jobId, reason) {
-    const { TransferTransaction, ScheduleDeleteTransaction, AccountId, TokenId } = await import('@hiero-ledger/sdk');
+    const { ScheduleDeleteTransaction } = await import('@hiero-ledger/sdk');
     const l = readLedger(); const h = l.held[jobId];
     if (!h || h.state !== 'held') return { txId: null, error: 'nothing held for this job' };
     const client = await this.#client();
     if (h.scheduleId) {
       try { await new ScheduleDeleteTransaction().setScheduleId(h.scheduleId).execute(client); } catch { /* already gone */ }
     }
-    const rx = await (await new TransferTransaction()
-      .addTokenTransfer(TokenId.fromString(HEDERA_TESTNET_USDC), AccountId.fromString(this.account), -Number(h.amount))
-      .addTokenTransfer(TokenId.fromString(HEDERA_TESTNET_USDC), AccountId.fromString(h.payer), Number(h.amount))
-      .execute(client)).getReceipt(client);
+    const tx = await buildTransfer(this.account, h.payer, h.amount);
+    const rx = await (await tx.execute(client)).getReceipt(client);
     h.state = 'refunded'; h.reason = reason; writeLedger(l);
     return { txId: rx.transactionId?.toString?.() ?? String(rx.status), degraded: false };
   }

@@ -5,36 +5,12 @@
 //   node src/buyer.js approve <jobId> [reason]
 //   node src/buyer.js reject  <jobId> [reason]
 //   node src/buyer.js show    <jobId>
-import { settlementTier, HEDERA_CAIP2 } from './config.js';
+import { payAsset } from './config.js';
+import { buildPaymentFor } from './payment.js';
 
 const SELLER = process.env.SELLER_URL || 'http://localhost:4021';
 
 const b64 = (o) => Buffer.from(JSON.stringify(o)).toString('base64');
-
-// Builds the X-PAYMENT payload. On the full tier this signs a real Hedera transfer with
-// @x402/hedera; on the local tier it emits a payload explicitly marked simulated, which only the
-// local stand-in facilitator will accept.
-async function buildPayment(accepted) {
-  const tier = settlementTier();
-  if (tier.name !== 'hedera-testnet') {
-    return {
-      x402Version: 2,
-      accepted,
-      payload: { simulated: true, payer: 'local-buyer', amount: accepted.amount, asset: accepted.asset },
-    };
-  }
-  // UNRUN as of 2026-09-10 — needs a funded testnet account holding USDC 0.0.429274.
-  const { ExactHederaScheme } = await import('@x402/hedera/exact/client');
-  const { createClientHederaSigner } = await import('@x402/hedera');
-  const signer = createClientHederaSigner({
-    accountId: process.env.HEDERA_BUYER_ID,
-    privateKey: process.env.HEDERA_BUYER_KEY,
-    network: 'testnet',
-  });
-  const scheme = new ExactHederaScheme(signer);
-  const result = await scheme.createPaymentPayload(2, accepted);
-  return { x402Version: 2, accepted, payload: result.payload ?? result };
-}
 
 async function ask(question) {
   console.log(`[buyer] asking: ${question}`);
@@ -50,12 +26,12 @@ async function ask(question) {
   const accepted = required.accepts[0];
   const lock = required.extensions?.outcomelock;
   console.log(`[buyer] 402 payment required`);
-  console.log(`         price     ${Number(accepted.amount) / 1e6} USDC (${accepted.asset})`);
+  console.log(`         price     ${Number(accepted.amount) / 10 ** payAsset().decimals} ${payAsset().symbol} (asset ${accepted.asset})`);
   console.log(`         network   ${accepted.network}`);
   console.log(`         payTo     ${accepted.payTo}   <- escrow, not the seller`);
   console.log(`         policy    ${lock?.releasePolicy ?? 'n/a'}`);
 
-  const payment = await buildPayment(accepted);
+  const payment = await buildPaymentFor(accepted);
   const paid = await fetch(`${SELLER}/work`, {
     method: 'POST',
     headers: { 'content-type': 'application/json', 'X-PAYMENT': b64(payment) },
@@ -90,7 +66,7 @@ async function show(jobId) {
   if (!r.ok) { console.log('[buyer]', j.error); return; }
   console.log(`job      ${j.id}`);
   console.log(`state    ${j.state}`);
-  console.log(`amount   ${j.amountUsdc} USDC`);
+  console.log(`amount   ${j.amountDisplay} ${j.assetSymbol || ''}`);
   console.log(`agent    ${j.agentVersion} (${j.workerTier})`);
   console.log(`hash     ${j.deliverableHash}`);
   console.log(`\nevidence trail${j.evidenceUrl ? ` (${j.evidenceUrl})` : ''}:`);

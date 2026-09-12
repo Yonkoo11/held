@@ -6,18 +6,21 @@
 // deliverable — or until the review deadline passes.
 import express from 'express';
 import crypto from 'node:crypto';
-import { FACILITATOR_URL, HEDERA_CAIP2, HEDERA_TESTNET_USDC, printTiers } from './config.js';
+import path from 'node:path';
+import { FACILITATOR_URL, HEDERA_CAIP2, payAsset, printTiers, tiers } from './config.js';
+import { buildPaymentFor } from './payment.js';
 import { makeEvidence, sha256 } from './evidence.js';
 import { makeSettlement, toUnits, fromUnits } from './settlement.js';
 import { doWork, agentVersion } from './worker.js';
 import * as store from './store.js';
 
 const PORT = Number(process.env.PORT || 4021);
-const PRICE_USDC = Number(process.env.PRICE_USDC || 0.05);
+const PRICE = Number(process.env.PRICE || process.env.PRICE_USDC || 0.05);
 const REVIEW_WINDOW_MS = Number(process.env.REVIEW_MINUTES || 10) * 60 * 1000;
 
 const app = express();
 app.use(express.json({ limit: '256kb' }));
+app.use(express.static(path.join(process.cwd(), 'public')));
 
 const evidence = makeEvidence();
 const settlement = makeSettlement();
@@ -48,8 +51,8 @@ function requirements(resourceUrl) {
   return {
     scheme: 'exact',
     network: HEDERA_CAIP2,
-    asset: HEDERA_TESTNET_USDC,
-    amount: toUnits(PRICE_USDC),
+    asset: payAsset().id,
+    amount: toUnits(PRICE),
     payTo: escrow,                       // <- escrow, not the seller. This is the whole product.
     maxTimeoutSeconds: 120,
     extra: feePayer ? { feePayer } : {},
@@ -62,7 +65,7 @@ function paymentRequired(res, resourceUrl, error) {
     error: error || 'payment required',
     resource: {
       url: resourceUrl,
-      description: `Research answer from an agent. ${PRICE_USDC} USDC, held in escrow until you approve it.`,
+      description: `Research answer from an agent. ${PRICE} ${payAsset().symbol}, held in escrow until you approve it.`,
       mimeType: 'application/json',
     },
     accepts: [requirements(resourceUrl)],
@@ -120,8 +123,41 @@ async function facilitator(path, body) {
 app.get('/health', (_req, res) => res.json({
   status: 'ok', escrow, feePayer,
   evidenceTopic, facilitator: FACILITATOR_URL,
-  priceUsdc: PRICE_USDC, agent: agentVersion(),
+  price: PRICE, asset: payAsset(), agent: agentVersion(), tiers: tiers(),
 }));
+
+// Convenience for the browser demo: the page has no wallet, so the server walks the same 402 ->
+// pay -> retry round trip against itself using the buyer's payment builder. Identical code path to
+// the CLI buyer — it is the same /work endpoint, the same facilitator and the same escrow.
+app.post('/demo/buy', async (req, res) => {
+  const question = (req.body?.question || '').toString().trim();
+  if (!question) return res.status(400).json({ error: 'send { "question": "..." }' });
+  const base = `http://127.0.0.1:${PORT}`;
+  try {
+    const quote = await fetch(`${base}/work`, {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ question }),
+    });
+    if (quote.status !== 402) {
+      return res.status(500).json({ error: `expected 402, got ${quote.status}` });
+    }
+    const accepted = (await quote.json()).accepts[0];
+    const payment = await buildPaymentFor(accepted);
+    const paid = await fetch(`${base}/work`, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'X-PAYMENT': Buffer.from(JSON.stringify(payment)).toString('base64'),
+      },
+      body: JSON.stringify({ question }),
+    });
+    const body = await paid.json();
+    if (!paid.ok) return res.status(paid.status).json({ error: body.error || 'payment failed' });
+    res.json(body);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
 
 app.post('/work', async (req, res) => {
   const resourceUrl = `${req.protocol}://${req.get('host')}/work`;
@@ -172,7 +208,8 @@ app.post('/work', async (req, res) => {
 
   const job = store.put({
     id: jobId, question, payer,
-    amount: paymentRequirements.amount, amountUsdc: fromUnits(paymentRequirements.amount),
+    amount: paymentRequirements.amount, amountDisplay: fromUnits(paymentRequirements.amount),
+    assetSymbol: payAsset().symbol,
     asset: paymentRequirements.asset,
     deliverable: work.output,
     deliverableHash: sha256(work.output),
@@ -202,7 +239,8 @@ app.post('/work', async (req, res) => {
   res.json({
     jobId, deliverable: work.output,
     agentVersion: work.agentVersion, workerTier: work.workerTier, model: work.model,
-    escrow: { account: escrow, state: 'held', amountUsdc: fromUnits(paymentRequirements.amount),
+    escrow: { account: escrow, state: 'held', amount: fromUnits(paymentRequirements.amount),
+              asset: payAsset().symbol,
               releasesAt: new Date(deadline).toISOString(), scheduleId: scheduled.scheduleId },
     review: { approve: `POST /jobs/${jobId}/approve`, reject: `POST /jobs/${jobId}/reject` },
     settleTx: settle.json.transaction,
@@ -260,7 +298,7 @@ const boot = async () => {
   ({ topic: evidenceTopic } = await evidence.init());
   console.log(`[seller] escrow account: ${escrow}`);
   console.log(`[seller] evidence trail: ${evidenceTopic}`);
-  console.log(`[seller] price: ${PRICE_USDC} USDC, review window ${REVIEW_WINDOW_MS / 60000} min`);
+  console.log(`[seller] price: ${PRICE} ${payAsset().symbol} (asset ${payAsset().id}), review window ${REVIEW_WINDOW_MS / 60000} min`);
   if (t.settlement.degraded) console.log('[seller] NOTE: settlement is on the local stand-in tier, not Hedera.');
   setInterval(() => sweep().catch((e) => console.error('[sweep]', e)), 15000);
   app.listen(PORT, () => console.log(`[seller] listening on http://localhost:${PORT}`));

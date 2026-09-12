@@ -52,6 +52,25 @@ All dated 2026-09-07 unless stated.
 - **Hedera track extra points:** pay-per-call metering, A2A negotiation, ERC-8004 / HCS-14 agent
   identity, UCP discovery, HTS custom fees, HCS audit trails, scheduled transactions.
 
+### Added 2026-09-12
+
+- **The demo prices in HBAR, not USDC, and that is deliberate.** `isHbarAsset`/`HBAR_ASSET_ID`
+  (`0.0.0`) are wired through the Hedera scheme, and a fresh portal account arrives funded with test
+  HBAR, whereas no working testnet **USDC** faucet was found. Pricing in HBAR reduces the human
+  steps in this whole project to exactly one: the portal signup. `PAY_ASSET=usdc` still works.
+- **HBAR has 8 decimals (tinybars), USDC has 6.** Amount conversion is per-asset; a fixed 6 would
+  have underpaid by 100x on HBAR.
+- **HBAR needs no token association**, so the HTS association trap applies only to `PAY_ASSET=usdc`.
+- **There is no keyless route to a funded testnet account.** Probed 2026-09-12:
+  `portal.hedera.com/api/account` 403, `faucet.hedera.com` 403, `testnet.hedera.com/faucet`
+  unreachable; `portal.hedera.com/register` 200. Key generation works offline but an unfunded key is
+  not an account. **The portal signup is genuinely human-only.**
+- **cloudflared quick tunnels do not work from this machine** — the tunnel registers a connection but
+  then logs `Failed to initialize DNS local resolver ... i/o timeout` and the public URL returns
+  nothing. **ngrok works.** Use ngrok, and send `ngrok-skip-browser-warning: 1` on API calls.
+- **Puppeteer's bundled Chrome was missing**; `npx puppeteer browsers install chrome` fetched
+  146.0.7680.153. The MCP server expects 131, so pass `executablePath` in `launchOptions`.
+
 ## Open Unknowns — DO NOT invent answers
 
 - Whether a scheduled transaction can be created with a multi-day `expirationTime` and

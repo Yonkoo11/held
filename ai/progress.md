@@ -64,3 +64,34 @@ account. Every receipt says so.
 1. Hedera testnet account -> environment file -> re-run the same flow on the real tier.
 2. Associate the escrow account with USDC 0.0.429274 or payments fail preflight.
 3. Public tunnel URL, README, demo video.
+
+## Session 2026-09-12 (early morning)
+
+### What Changed (Plain English)
+There is now a web page you can open and use: type a question, pay, read the answer, then approve or
+reject it while a countdown ticks. It is reachable from the public internet. And there is now a
+single command that switches the whole thing from the practice version onto the real Hedera network
+the moment an account exists.
+
+### Tested by running it
+- Web page renders and works (screenshotted); the buy button drives the same 402 -> pay -> retry
+  path as the command line, through the same code.
+- Public URL live via ngrok; the 402 quote was fetched from the open internet showing
+  `hedera:testnet`, the escrow as payTo, and the facilitator's feePayer 0.0.7162784.
+- Full regression re-run after switching the default asset to HBAR: quote, pay, approve, reject and
+  the deadline sweeper all still pass.
+- `scripts/prove-live.js` runs, writes PROOF.md, and correctly states that a local-tier run proves
+  nothing about Hedera.
+
+### Decisions taken without asking
+- **Price in HBAR, not USDC.** A new testnet account is auto-funded with HBAR; no working testnet
+  USDC faucet was found. This removes a dependency rather than adding one.
+- **ngrok over cloudflared** — cloudflared registers but its DNS resolver times out on this machine.
+- **No full design pass on the UI.** The build order here is core-first, polish-last, and the core
+  is not yet proven on Hedera. The page is functional and honest rather than art-directed.
+
+### Still true, still blocking
+- **No Hedera account exists, so no Hedera code has ever run.** Probed every faucet and portal
+  endpoint: there is no keyless path. The track requires a live service on Hedera. Until
+  `scripts/go-live.js` runs, this does not qualify.
+- No demo video yet. No submission filed yet.

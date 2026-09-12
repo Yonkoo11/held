@@ -9,11 +9,10 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-// Tests must not write into the demo's data. Set DATA_DIR to isolate a run.
-const DATA_DIR = path.join(process.cwd(), process.env.DATA_DIR || 'data');
+import { inData } from './data-dir.js';
 import { settlementTier, payAsset, MIRROR_NODE } from './config.js';
 
-const LEDGER = path.join(DATA_DIR, 'escrow-ledger.json');
+const LEDGER = inData('escrow-ledger.json');
 
 export const toUnits = (amount) => String(Math.round(Number(amount) * 10 ** payAsset().decimals));
 export const fromUnits = (units) => Number(units) / 10 ** payAsset().decimals;

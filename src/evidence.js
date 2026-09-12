@@ -5,12 +5,11 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-// Tests must not write into the demo's data. Set DATA_DIR to isolate a run.
-const DATA_DIR = path.join(process.cwd(), process.env.DATA_DIR || 'data');
+import { inData } from './data-dir.js';
 import crypto from 'node:crypto';
 import { evidenceTier, MIRROR_NODE } from './config.js';
 
-const FILE = path.join(DATA_DIR, 'evidence.jsonl');
+const FILE = inData('evidence.jsonl');
 
 export const sha256 = (s) =>
   crypto.createHash('sha256').update(typeof s === 'string' ? s : JSON.stringify(s)).digest('hex');

@@ -14,6 +14,7 @@
     "express": "^5.2.1"
   },
   "scripts": {
+    "start": "node src/seller.js",
     "seller": "node --env-file-if-exists=.env --env-file-if-exists=\"$HOME/.outcomelock.env\" src/seller.js",
     "buyer": "node --env-file-if-exists=.env --env-file-if-exists=\"$HOME/.outcomelock.env\" src/buyer.js",
     "go-live": "node --env-file-if-exists=.env --env-file-if-exists=\"$HOME/.outcomelock.env\" scripts/go-live.js",

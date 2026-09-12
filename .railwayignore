@@ -1,0 +1,7 @@
+video/
+proposals/
+ai/
+spec/
+out/
+*.webm
+data/

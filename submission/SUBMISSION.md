@@ -17,13 +17,14 @@ Requirement checklist, honestly marked:
 
 | requirement | status |
 |---|---|
-| Host a live x402-gated service on Hedera testnet/mainnet via Blocky402 | `<<FILL: needs go-live.js run>>` — service is live and public, but on the local stand-in until an account exists |
-| Build a platform/agent consuming that service with >= 1 real paid request | `<<FILL: needs a real paid request>>` — the consuming agent exists and works; the request has not yet been real |
+| Host a live x402-gated service on Hedera testnet/mainnet via Blocky402 | **MET** — live and public, escrow `0.0.10495061`, facilitator `api.testnet.blocky402.com`, fee payer `0.0.7162784` |
+| Build a platform/agent consuming that service with >= 1 real paid request | **MET** — three real paid requests on 2026-09-12, all confirmed by the mirror node. See `PROOF.md` |
 | Public GitHub repo with README covering setup, architecture, payment flow | READY — README.md covers all three |
 | Demo video <= 5 minutes showing paid request execution | `<<FILL: not recorded>>` |
 
-Extra-points items actually implemented: pay-per-call metering, HCS audit trail, scheduled
-transactions for the auto-release, and agent version identity.
+Extra-points items actually implemented **and exercised on testnet**: pay-per-call metering, HCS
+audit trail (topic `0.0.10495064`, 49 messages), scheduled transactions for the auto-release
+(verified executing at expiry with the service only observing), and agent version identity.
 Not implemented: A2A negotiation, UCP discovery, HTS custom fees.
 
 ---
@@ -89,8 +90,9 @@ machine ran out of credit mid-run, the worker failed over, and the demo continue
 - Source: `<<FILL: public GitHub URL>>`
 - Live service: `<<FILL: public URL — note it is a tunnel and may be down after the event>>`
 - Demo video: `<<FILL>>`
-- Escrow account on HashScan: `<<FILL: https://hashscan.io/testnet/account/...>>`
-- Evidence topic on HashScan: `<<FILL: https://hashscan.io/testnet/topic/...>>`
+- Escrow account on HashScan: https://hashscan.io/testnet/account/0.0.10495061
+- Evidence topic on HashScan: https://hashscan.io/testnet/topic/0.0.10495064
+- An auto-release schedule: https://hashscan.io/testnet/schedule/0.0.10495601
 - Proof of a live run with mirror-node-confirmed transaction ids: `PROOF.md` in the repo
 
 ## What we are not claiming
@@ -101,10 +103,10 @@ with which agent version, and that the buyer had a real opportunity to look befo
 
 ---
 
-## If Hedera never runs
+## If Hedera never runs — no longer applicable
 
-If `scripts/go-live.js` has not been run by the deadline, the Hedera track's first two requirements
-are unmet. In that case:
+Superseded 2026-09-12: go-live ran, and all three endings are confirmed on testnet in `PROOF.md`.
+Kept only as the rule that applied while it was unproven:
 
 1. **Do not submit to the Hedera AI & Agentic Payments track.** A submission claiming a live Hedera
    service that does not exist is a false claim, and a judge will check `payTo` in about ten seconds.

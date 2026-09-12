@@ -9,6 +9,33 @@ Deadline: 2026-09-13 12:00 EDT / 17:00 WAT.
 
 ---
 
+## Submission path
+
+**Partner Prizes Only.** Not entering Finalist judging. Round one screens roughly the top 20% into
+live judging and has no bearing on partner prizes, and partners never see its results, so the two
+paths are independent. At most async events the majority of the money is paid to projects that never
+reach live judging.
+
+## Partner prizes selected
+
+Up to three may be selected. A partner with several tracks counts as one selection and remains
+eligible for all of its tracks.
+
+**1. Hedera.** Selecting Hedera covers both tracks this project can honestly enter:
+*AI & Agentic Payments* (the core submission) and *Open Source — Improve the Hedera Harness*.
+
+**2. Bazantic** — `<<DECISION: needs a Bazantic account, roughly ten minutes of signup>>`.
+Held is already an x402 gateway that settles on Hedera, which makes *Best Recipe Using EthGlobal
+Sponsor APIs* a genuine fit rather than a stretch: the recipe would be an agent discovering a
+priced service, buying from it, and having the payment held pending review, which neither Bazantic
+nor Hedera does alone. The marginal build is small once an account exists. Without the account this
+slot stays empty.
+
+**3. Left empty, deliberately.** `spec/01-plan.md` carries a standing rule that no track is entered
+below depth 4 of 5. Nothing else on the sponsor list reaches that here. ENS would pay more and would
+mean putting agent identity on Sepolia while the payments live on Hedera, with no reason beyond the
+prize; a judge would be right to ask why, and there is no good answer. An empty slot costs nothing.
+
 ## Track applied for
 
 **Hedera — AI & Agentic Payments on Hedera** ($6,000, up to 3 teams x $2,000)
@@ -20,10 +47,10 @@ Requirement checklist, honestly marked:
 | Host a live x402-gated service on Hedera testnet/mainnet via Blocky402 | **MET** — live and public, escrow `0.0.10495061`, facilitator `api.testnet.blocky402.com`, fee payer `0.0.7162784` |
 | Build a platform/agent consuming that service with >= 1 real paid request | **MET** — three real paid requests on 2026-09-12, all confirmed by the mirror node. See `PROOF.md` |
 | Public GitHub repo with README covering setup, architecture, payment flow | READY — README.md covers all three |
-| Demo video <= 5 minutes showing paid request execution | `<<FILL: not recorded>>` |
+| Demo video showing paid request execution | Picture cut and rendered at **2:13**, 1920x1080. `<<FILL: narration not recorded>>` |
 
 Extra-points items actually implemented **and exercised on testnet**: pay-per-call metering, HCS
-audit trail (topic `0.0.10495064`, 49 messages), scheduled transactions for the auto-release
+audit trail (topic `0.0.10495064`, 179 messages at the time of writing), scheduled transactions for the auto-release
 (verified executing at expiry with the service only observing), and agent version identity.
 Not implemented: A2A negotiation, UCP discovery, HTS custom fees.
 
@@ -115,3 +142,44 @@ Kept only as the rule that applied while it was unproven:
    filed at all.
 3. Say in the first line of the description that settlement runs on a local stand-in and what would
    change on Hedera.
+
+---
+
+## AI tools, and the feedback each partner asks for
+
+The full disclosure is in [`AI-USE.md`](../AI-USE.md), with the spec trail in [`spec/`](../spec/),
+because the rules ask for the planning artifacts and not just the output. Short version: Claude Code
+wrote most of the code, a human directed it, and the record of who decided what is published rather
+than asserted.
+
+### Feedback for Hedera
+
+What worked. Blocky402 on testnet genuinely needs no account and no API key, which removed the usual
+first-day blocker entirely. The facilitator paying gas means a buying agent needs no HBAR at all,
+which is the right default for agent-to-agent payments and is underplayed in the docs. Scheduled
+transactions with `waitForExpiry` are the reason this project exists in this shape: nothing else
+gives you a deadline that executes itself with nobody online.
+
+What cost us time, in the order it hurt:
+
+1. `createClientHederaSigner` takes positional arguments and a `PrivateKey` object. Passing a config
+   object fails with `t.startsWith is not a function`, which points nowhere near the real problem.
+2. The `network` field must be the CAIP-2 string `hedera:testnet`. Passing `testnet` throws
+   `Unsupported Hedera network`, and the doc comment on the field suggests otherwise.
+3. `TransactionReceipt` has no `transactionId`. Reading it there yields `undefined`, and a fallback
+   we had written recorded the literal string `SUCCESS` as a transaction id for a while.
+4. `PrivateKey.fromStringED25519()` silently accepts a raw ECDSA key and returns a different,
+   working-looking key. The portal issues ECDSA by default, so this is easy to hit and gives no
+   error until a signature is rejected much later. We now ask the mirror node what key type an
+   account actually has and verify the derived public key against it before starting.
+5. The SDK rename from `@hashgraph/sdk` to `@hiero-ledger/sdk` means a project can end up with two
+   copies and two incompatible `AccountId` classes. Worth a louder note in the x402 packages.
+
+The sharpest lesson was ours, not Hedera's: our sweeper released a job while the network's own
+scheduled transaction executed it, and the account paid twice for one job thirteen seconds apart. A
+service that arms a scheduled transaction must observe it rather than repeat it. That fix is in
+`src/seller.js` and the reasoning is in `INVARIANTS.md`.
+
+### Feedback for Bazantic
+
+`<<FILL once the account exists>>`

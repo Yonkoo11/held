@@ -145,6 +145,8 @@ scripts/
 | [`.agents/skills/x402-hedera/SKILL.md`](.agents/skills/x402-hedera/SKILL.md) | measured behaviour of the x402 and Hedera SDKs — read before writing a call |
 | [`PROOF.md`](PROOF.md) | the last live run, with mirror-node-confirmed transaction ids |
 | [`CLAUDE.md`](CLAUDE.md) | verified facts and open unknowns, each dated |
+| [`AI-USE.md`](AI-USE.md) | where AI wrote code, where the human intervened, and what changed as a result |
+| [`spec/`](spec/) | the planning artifacts: the day-one plan, the build log with every defect, and both design passes |
 
 ---
 

@@ -1,12 +1,16 @@
 # DEMO-SCRIPT — Held
 
-Generated 2026-09-12 · Target 150s (track cap is 5:00; shorter is better)
-Track requirement being satisfied: *"demo video ≤ 5 minutes showing paid request execution"*
+Generated 2026-09-12, corrected 2026-09-12 against the official rules.
+**Runtime must be between 2:00 and 4:00.** Hedera's own page says five minutes; ETHGlobal's
+submission rule is narrower and it binds, and the upload rejects out-of-range files rather
+than warning. The cut currently renders at 2:13.
+Track requirement being satisfied: *"demo video showing paid request execution"*
 
-**Audio strategy: NOT YET LOCKED — needs Dami.** Recommendation: `native` (narrate while recording).
-It is faster with a day left, and it makes captions byte-match the audio by construction rather than
-by alignment. If you would rather record silent and add voiceover after, say so and this becomes
-`separate` and the pacing changes.
+**Audio strategy: LOCKED, and the choice was made for us.** ETHGlobal bans text-to-speech and AI
+voiceover outright, and separately bans speeding a video up to fit the limit. So the narration is a
+human reading the lines, recorded per scene and added afterwards, and playback stays at normal
+speed. The picture is already cut and rendered; see `RECORD-NARRATION.md` for the ten lines and the
+three commands that finish it.
 
 ---
 

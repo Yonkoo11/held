@@ -96,11 +96,49 @@ async function main() {
     for (const want of ['paid', 'delivered', 'escrow-scheduled', 'released']) {
       types.includes(want) ? ok(`trail records "${want}"`) : no(`trail is missing "${want}"`, types.join(','));
     }
-    const byDeadline = (full.evidence || []).find((e) => e.type === 'released')?.payload?.by;
-    byDeadline === 'deadline' ? ok('the release is attributed to the deadline, not a buyer')
-                              : no('release attributed wrongly', String(byDeadline));
-  } finally {
+    // Two legitimate attributions: Hedera's scheduled transaction executed, or our fallback sweep
+    // did it. Either is correct; "buyer" would not be.
+    const by = (full.evidence || []).find((e) => e.type === 'released')?.payload?.by;
+    ['deadline-sweep', 'hedera-scheduled-transaction'].includes(by)
+      ? ok(`the release is attributed to "${by}", not to a buyer`)
+      : no('release attributed wrongly', String(by));
+    // 5 — the timer fails to arm. The buyer has already paid, so the job must still exist and be
+    //     held; losing the timer costs a mechanism, never the buyer's money.
+    console.log('5. the auto-release timer fails to arm (fault injected)');
     seller.kill();
+    await sleep(1500);
+    const broken = spawn(process.execPath, ['src/seller.js'], {
+      env: { ...process.env, PORT: String(PORT), DEMO_BUY: 'on',
+             REVIEW_MINUTES: String(REVIEW_SECONDS / 60), SIMULATE_SCHEDULE_FAILURE: '1' },
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+    broken.stdout.on('data', (d) => { log += d; });
+    broken.stderr.on('data', (d) => { log += d; });
+    const backUp = await waitFor('the seller to restart', async () => {
+      try { return (await fetch(`${BASE}/health`)).ok; } catch { return false; }
+    }, 30000);
+    if (!backUp) { no('seller did not restart for the fault-injection case'); }
+    else {
+      const e = await buy('regression: schedule arming fails');
+      if (e.status !== 200) {
+        no('a paid request failed when the timer could not be armed', `http ${e.status}`);
+      } else {
+        ok('the paid request still succeeds');
+        const j = (await req(`/jobs/${e.json.jobId}`)).json;
+        j && j.state === 'held' ? ok('the job exists and is held — funds are not stranded')
+                                : no('the paid job is missing or not held', `state=${j?.state}`);
+        j?.scheduleId === null ? ok('the job records that no timer was armed')
+                               : no('scheduleId should be null', String(j?.scheduleId));
+        const released = await waitFor('the fallback sweep',
+          async () => (await state(e.json.jobId)) === 'released',
+          REVIEW_SECONDS * 1000 + SWEEP_INTERVAL_MS + 20000);
+        released ? ok('the deadline sweep releases it anyway')
+                 : no('nothing released the job', `still ${await state(e.json.jobId)}`);
+      }
+    }
+    broken.kill();
+  } finally {
+    try { seller.kill(); } catch {}
     if (fail) fs.writeFileSync('/tmp/regression-seller.log', log);
   }
 

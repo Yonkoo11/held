@@ -14,8 +14,17 @@ import { MIRROR_NODE } from './config.js';
 const strip = (s) => String(s || '').trim().replace(/^0x/i, '');
 
 /** What the ledger says this account's key is. Public information only. */
-export async function accountKeyInfo(accountId) {
-  const r = await fetch(`${MIRROR_NODE}/api/v1/accounts/${encodeURIComponent(accountId)}`);
+export async function accountKeyInfo(accountId, attempt = 1) {
+  let r;
+  try {
+    r = await fetch(`${MIRROR_NODE}/api/v1/accounts/${encodeURIComponent(accountId)}`);
+  } catch (e) {
+    // Transient `fetch failed` against the mirror node was observed twice on 2026-09-12, once
+    // mid-payment. Retry rather than let a blip surface as a failed paid request.
+    if (attempt >= 4) throw new Error(`mirror node unreachable after ${attempt} attempts: ${e.message}`);
+    await new Promise((ok) => setTimeout(ok, 400 * attempt));
+    return accountKeyInfo(accountId, attempt + 1);
+  }
   if (r.status === 404) {
     throw new Error(`the mirror node has never heard of ${accountId}. Is it a testnet account id, in 0.0.x form?`);
   }

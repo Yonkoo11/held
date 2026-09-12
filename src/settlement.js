@@ -43,6 +43,9 @@ class LocalSettlement {
   }
 
   async scheduleRelease(jobId, { to, deadlineMs }) {
+    if (process.env.SIMULATE_SCHEDULE_FAILURE === '1') {
+      throw new Error('simulated schedule failure');
+    }
     const l = readLedger();
     if (l.held[jobId]) { l.held[jobId].scheduledFor = deadlineMs; l.held[jobId].scheduledTo = to; }
     writeLedger(l);
@@ -172,6 +175,11 @@ class HederaSettlement {
   }
 
   async scheduleRelease(jobId, { to, deadlineMs }) {
+    // Fault injection for tests. Arming the timer must never be able to strand a paid job, and the
+    // only way to know that is to make it fail on purpose.
+    if (process.env.SIMULATE_SCHEDULE_FAILURE === '1') {
+      throw new Error('simulated schedule failure');
+    }
     const { ScheduleCreateTransaction, Timestamp } = await import('@hiero-ledger/sdk');
     const l = readLedger();
     const h = l.held[jobId];

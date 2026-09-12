@@ -45,3 +45,14 @@ export function transition(id, from, to, fields = {}) {
   writeAll(all);
   return { ok: true, job: all[id] };
 }
+
+/** Update fields on a job WITHOUT touching its state. State changes must use `transition`. */
+export function patch(id, fields) {
+  const all = readAll();
+  const job = all[id];
+  if (!job) return null;
+  const { state, ...safe } = fields;          // state is the state machine's business, not this
+  all[id] = { ...job, ...safe, updatedAt: Date.now() };
+  writeAll(all);
+  return all[id];
+}

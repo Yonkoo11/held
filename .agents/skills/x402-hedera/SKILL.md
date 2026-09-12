@@ -159,6 +159,37 @@ mirror-node call rather than letting a blip fail a paid request.
 
 ---
 
+---
+
+## Model providers (the worker's tiers)
+
+The worker walks **down** the tier list on failure — a dead key at the top must not disqualify a
+working one below it. Dropping straight to the deterministic responder means a valid key never gets
+tried, which is what happened before 2026-09-12.
+
+**Gemini free tier is 20 requests per day, per project, PER MODEL.** Measured from the 429 body:
+`GenerateRequestsPerDayPerProjectPerModel-FreeTier | limit: 20`. Consequences:
+
+- Changing `GEMINI_MODEL` changes which bucket you draw from. Exhausting `gemini-flash-latest` does
+  not touch `gemini-2.5-flash`.
+- **Never let a test suite call a provider.** `scripts/test-worker.js` deletes the provider keys from
+  its own environment before importing the worker, so it exercises the deterministic tier and spends
+  nothing.
+- Do not retry a per-day 429. The delay hint is seconds; the window is a day. Fail through to the
+  next tier instead.
+- `gemini-2.0-flash` is retired and 404s against a perfectly valid key. On 404 the worker lists the
+  models the key can actually use rather than leaving you guessing.
+
+**Current flash models think by default, and thinking tokens come out of `maxOutputTokens`.** A short
+factual answer with an 800-token budget can return `finishReason: MAX_TOKENS` and *no text at all*.
+Set `generationConfig.thinkingConfig.thinkingBudget = 0` when you want an answer, not reasoning.
+
+Google also returns **intermittent 503** on a healthy key — two calls in three at one point on
+2026-09-12. Retry 5xx and rate-limit 429s honouring the API's own `retryDelay`; fail fast on daily
+quota.
+
+---
+
 ## Measuring, not assuming
 
 - `npm run dryrun` builds every Hedera transaction offline — catches malformed builders with no

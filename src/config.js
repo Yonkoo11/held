@@ -47,15 +47,26 @@ export function evidenceTier() {
            label: 'LOCAL APPEND-ONLY FILE — NOT HCS' };
 }
 
-// Worker tier: four levels, in priority order. The bottom one needs no key and still produces a
-// real deliverable, which is enough to demonstrate the escrow mechanism.
+// Worker tiers, in priority order. Every tier whose credential is present is a candidate, and the
+// worker walks DOWN the list on failure rather than dropping straight to the bottom — a dead key at
+// the top must not disqualify a working one below it.
+const WORKER_TIERS = [
+  { name: 'anthropic', key: 'ANTHROPIC_API_KEY', degraded: false, label: 'Claude' },
+  { name: 'openai',    key: 'OPENAI_API_KEY',    degraded: false, label: 'OpenAI' },
+  { name: 'gemini',    key: 'GEMINI_API_KEY',    degraded: false, label: 'Gemini' },
+  { name: 'ollama',    key: 'OLLAMA_HOST',       degraded: true,  label: 'local ollama' },
+];
+
+/** Every tier we could try, best first, always ending in the one that needs nothing. */
+export function workerTiers() {
+  const available = WORKER_TIERS.filter((t) => env(t.key)).map(({ key, ...rest }) => rest);
+  return [...available, { name: 'deterministic', degraded: true,
+                          label: 'DETERMINISTIC WORKER — NO MODEL' }];
+}
+
+/** The tier we would try first. Used for display; doWork() may end up lower down. */
 export function workerTier() {
-  if (env('ANTHROPIC_API_KEY')) return { name: 'anthropic', degraded: false, label: 'Claude' };
-  if (env('OPENAI_API_KEY'))    return { name: 'openai',    degraded: false, label: 'OpenAI' };
-  if (env('GEMINI_API_KEY'))    return { name: 'gemini',    degraded: false, label: 'Gemini' };
-  if (env('OLLAMA_HOST'))       return { name: 'ollama',    degraded: true,  label: 'local ollama' };
-  return { name: 'deterministic', degraded: true,
-           label: 'DETERMINISTIC WORKER — NO MODEL' };
+  return workerTiers()[0];
 }
 
 export function tiers() {

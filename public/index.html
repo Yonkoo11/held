@@ -90,6 +90,16 @@
 const $ = (id) => document.getElementById(id);
 let priceInfo = null;
 
+// The claim token proves you are the buyer for a job. It is shown once, so the page keeps it.
+// Per-browser only: open the page elsewhere and you cannot decide on these jobs, which is the point.
+const TOKENS = 'outcomelock.tokens';
+function readTokens() {
+  try { return JSON.parse(localStorage.getItem(TOKENS) || '{}'); } catch { return {}; }
+}
+function saveToken(jobId, token) {
+  try { const t = readTokens(); t[jobId] = token; localStorage.setItem(TOKENS, JSON.stringify(t)); } catch {}
+}
+
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
 async function loadHealth() {
@@ -111,12 +121,15 @@ function countdown(deadline) {
 function jobHtml(j) {
   const trail = (j.evidence || []).map((e) =>
     `<div><b>${esc(e.type)}</b><span>${esc(new Date(e.at).toLocaleTimeString())}</span></div>`).join('');
-  const buttons = j.state === 'held'
+  const mine = Boolean(readTokens()[j.id]);
+  const buttons = j.state === 'held' && mine
     ? `<div class="row">
          <button data-act="approve" data-id="${j.id}">Approve — pay the seller</button>
          <button class="ghost" data-act="reject" data-id="${j.id}">Reject — refund me</button>
        </div>`
-    : `<div class="meta">${esc(j.decisionReason || '')}${j.decisionTx ? ` · ${esc(j.decisionTx)}` : ''}</div>`;
+    : j.state === 'held'
+      ? `<div class="meta">paid for in another browser — only the buyer who paid can decide</div>`
+      : `<div class="meta">${esc(j.decisionReason || '')}${j.decisionTx ? ` · ${esc(j.decisionTx)}` : ''}</div>`;
   return `<div class="job">
     <div class="jobhead">
       <span class="q">${esc(j.question)}</span>
@@ -149,6 +162,7 @@ $('go').addEventListener('click', async () => {
     });
     const b = await r.json();
     if (!r.ok) throw new Error(b.error || `failed (${r.status})`);
+    if (b.claimToken) saveToken(b.jobId, b.claimToken);
     $('q').value = '';
     await loadJobs();
   } catch (e) {
@@ -162,10 +176,15 @@ $('jobs').addEventListener('click', async (ev) => {
   const b = ev.target.closest('button[data-act]');
   if (!b) return;
   b.disabled = true;
-  await fetch(`/jobs/${b.dataset.id}/${b.dataset.act}`, {
-    method: 'POST', headers: { 'content-type': 'application/json' },
+  const res = await fetch(`/jobs/${b.dataset.id}/${b.dataset.act}`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', 'X-Job-Token': readTokens()[b.dataset.id] || '' },
     body: JSON.stringify({ reason: b.dataset.act === 'approve' ? 'looks right' : 'not what I asked for' }),
   });
+  if (!res.ok) {
+    const e = await res.json().catch(() => ({}));
+    $('err').textContent = e.error || `could not ${b.dataset.act}`; $('err').hidden = false;
+  }
   await loadJobs();
 });
 

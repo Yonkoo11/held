@@ -74,7 +74,8 @@ async function main() {
   const job1 = paid.json;
   console.log(`[prove-live] job ${job1.jobId} paid, settle tx ${job1.settleTx}`);
 
-  const approve = await post(`/jobs/${job1.jobId}/approve`, { reason: 'answered the question' });
+  const approve = await post(`/jobs/${job1.jobId}/approve`, { reason: 'answered the question' },
+    { 'X-Job-Token': job1.claimToken });
   console.log(`[prove-live] approved -> ${approve.json.state}, tx ${approve.json.tx}`);
   results.push({ case: 'buyer approves', job: job1.jobId, settleTx: job1.settleTx,
                  decisionTx: approve.json.tx, state: approve.json.state });
@@ -86,7 +87,8 @@ async function main() {
   const paid2 = await post('/work', { question: q2 },
     { 'X-PAYMENT': Buffer.from(JSON.stringify(payment2)).toString('base64') });
   const job2 = paid2.json;
-  const reject = await post(`/jobs/${job2.jobId}/reject`, { reason: 'not specific enough' });
+  const reject = await post(`/jobs/${job2.jobId}/reject`, { reason: 'not specific enough' },
+    { 'X-Job-Token': job2.claimToken });
   console.log(`[prove-live] rejected -> ${reject.json.state}, tx ${reject.json.tx}`);
   results.push({ case: 'buyer rejects', job: job2.jobId, settleTx: job2.settleTx,
                  decisionTx: reject.json.tx, state: reject.json.state });

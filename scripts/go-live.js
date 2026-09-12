@@ -54,7 +54,7 @@ async function main() {
 
   const {
     Client, PrivateKey, AccountId, Hbar,
-    AccountCreateTransaction, TopicCreateTransaction, TokenAssociateTransaction, TokenId,
+    AccountCreateTransaction, TopicCreateTransaction,
   } = await import('@hiero-ledger/sdk');
 
   const client = Client.forTestnet();
@@ -81,22 +81,47 @@ async function main() {
   const topicId = topicRx.topicId.toString();
   console.log(`[go-live] created evidence topic: ${topicId}`);
 
-  if (!asset.isHbar) {
-    for (const [label, acct] of [['escrow', escrow], ['buyer', buyer]]) {
-      try {
-        const t = await new TokenAssociateTransaction()
-          .setAccountId(AccountId.fromString(acct.id))
-          .setTokenIds([TokenId.fromString(asset.id)])
-          .freezeWith(client)
-          .sign(PrivateKey.fromStringDer(acct.key));
-        await (await t.execute(client)).getReceipt(client);
-        console.log(`[go-live] associated ${label} with ${asset.symbol} (${asset.id})`);
-      } catch (e) {
-        if (String(e).includes('TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT')) continue;
-        console.error(`[go-live] could not associate ${label} with ${asset.symbol}: ${e.message}`);
-      }
+  // Both accounts were created with automatic token association slots, so USDC arriving from the
+  // faucet associates itself. Explicit association is only a belt-and-braces path.
+  const HEDERA_TESTNET_USDC = '0.0.429274';
+  async function usdcBalance(accountId) {
+    const r = await fetch(`${MIRROR_NODE}/api/v1/accounts/${accountId}/tokens?token.id=${HEDERA_TESTNET_USDC}`);
+    if (!r.ok) return 0;
+    const d = await r.json();
+    return Number((d.tokens || [])[0]?.balance || 0) / 1e6;
+  }
+
+  console.log('');
+  console.log('─'.repeat(74));
+  console.log('OPTIONAL, ~2 minutes, and it makes the demo considerably stronger:');
+  console.log('');
+  console.log('  Claim test USDC at  https://faucet.circle.com');
+  console.log('  Pick "Hedera Testnet" and paste this address:');
+  console.log('');
+  console.log(`      ${buyer.id}`);
+  console.log('');
+  console.log('  20 USDC per address every 2 hours. Paying an agent in a stablecoin is the story');
+  console.log('  this track is about; HBAR works but reads as a gas token.');
+  console.log('─'.repeat(74));
+
+  const waitMs = Number(process.env.WAIT_USDC_SECONDS || 180) * 1000;
+  let usdc = 0;
+  if (waitMs > 0) {
+    const until = Date.now() + waitMs;
+    process.stdout.write('[go-live] watching for USDC to arrive (Ctrl-C to skip)');
+    while (Date.now() < until) {
+      usdc = await usdcBalance(buyer.id);
+      if (usdc > 0) break;
+      process.stdout.write('.');
+      await new Promise((ok) => setTimeout(ok, 6000));
     }
-    console.log(`[go-live] NOTE: the buyer account holds no ${asset.symbol} yet. Fund it, or run with PAY_ASSET=hbar.`);
+    console.log('');
+  }
+  if (usdc > 0) {
+    console.log(`[go-live] buyer holds ${usdc} USDC — switching the service to PAY_ASSET=usdc`);
+  } else {
+    console.log('[go-live] no USDC seen. Staying on HBAR, which needs nothing further.');
+    console.log(`[go-live] claim it later and add PAY_ASSET=usdc yourself; the code path is the same.`);
   }
 
   appendEnv([
@@ -108,6 +133,7 @@ async function main() {
     `HEDERA_BUYER_KEY=${buyer.key}`,
     `SELLER_ACCOUNT_ID=${operatorId}`,
     `HCS_TOPIC_ID=${topicId}`,
+    `PAY_ASSET=${usdc > 0 ? 'usdc' : 'hbar'}`,
   ]);
 
   client.close();

@@ -5,8 +5,20 @@
 //   node src/buyer.js approve <jobId> [reason]
 //   node src/buyer.js reject  <jobId> [reason]
 //   node src/buyer.js show    <jobId>
+import fs from 'node:fs';
+import path from 'node:path';
 import { payAsset } from './config.js';
 import { buildPaymentFor } from './payment.js';
+
+// The claim token is handed out once, at payment. Keep it: without it this CLI cannot decide on
+// its own jobs, which is the same rule that stops a stranger deciding on them.
+const TOKENS = path.join(process.cwd(), 'data', 'buyer-tokens.json');
+const readTokens = () => { try { return JSON.parse(fs.readFileSync(TOKENS, 'utf8')); } catch { return {}; } };
+function saveToken(jobId, token) {
+  const t = readTokens(); t[jobId] = token;
+  fs.mkdirSync(path.dirname(TOKENS), { recursive: true });
+  fs.writeFileSync(TOKENS, JSON.stringify(t, null, 2), { mode: 0o600 });
+}
 
 const SELLER = process.env.SELLER_URL || 'http://localhost:4021';
 
@@ -40,6 +52,7 @@ async function ask(question) {
   const body = await paid.json();
   if (!paid.ok) { console.log(`[buyer] payment rejected (${paid.status}):`, body.error); return; }
 
+  if (body.claimToken) saveToken(body.jobId, body.claimToken);
   console.log(`\n[buyer] paid. job ${body.jobId}`);
   console.log(`[buyer] settlement tx ${body.settleTx}`);
   console.log(`[buyer] money is HELD in ${body.escrow.account}, releases at ${body.escrow.releasesAt}`);
@@ -51,8 +64,14 @@ async function ask(question) {
 }
 
 async function decide(action, jobId, reason) {
+  const token = readTokens()[jobId];
+  if (!token) {
+    console.log(`[buyer] no claim token stored for ${jobId} — this CLI did not pay for that job.`);
+    return;
+  }
   const r = await fetch(`${SELLER}/jobs/${jobId}/${action}`, {
-    method: 'POST', headers: { 'content-type': 'application/json' },
+    method: 'POST',
+    headers: { 'content-type': 'application/json', 'X-Job-Token': token },
     body: JSON.stringify({ reason }),
   });
   const b = await r.json();

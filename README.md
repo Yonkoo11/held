@@ -136,6 +136,10 @@ nothing whatsoever about Hedera.
    ```
    This creates the escrow account, the buyer account and the evidence topic, and writes the new
    ids and keys back into `.env`. It prints public ids only.
+   While it runs it will print the buyer's account id and pause. Claim test USDC for it at
+   <https://faucet.circle.com> — choose **Hedera Testnet**, paste the address, 20 USDC per address
+   every two hours. It watches for the USDC to land and switches the service to `PAY_ASSET=usdc`
+   automatically. Skip it and everything stays on HBAR, which needs nothing further.
 4. ```bash
    node --env-file=.env src/seller.js          # should now print settlement tier "hedera-testnet"
    node --env-file=.env scripts/prove-live.js  # runs every path and writes PROOF.md
@@ -148,7 +152,9 @@ mirror node for each transaction id and fails loudly if one cannot be found.
 
 | variable | default | meaning |
 |---|---|---|
-| `PAY_ASSET` | `hbar` | `hbar` or `usdc`. HBAR is the default because a fresh testnet account is funded with it automatically |
+| `PAY_ASSET` | `hbar` | `hbar` or `usdc` (testnet USDC `0.0.429274`, claimable from <https://faucet.circle.com>). HBAR is the default only because a fresh account already holds some |
+| `DEMO_BUY` | off | lets the web page buy using the server's own account. Off by default once settlement is real, because a public URL plus a funded key empties the key |
+| `MAX_QUESTION_CHARS` | `2000` | input cap; every request costs a model run and a payment |
 | `PRICE` | `0.05` | price per request, in whole units of the asset |
 | `REVIEW_MINUTES` | `10` | how long the buyer has before the money auto-releases |
 | `FACILITATOR_URL` | `https://api.testnet.blocky402.com` | the x402 facilitator |
@@ -156,12 +162,39 @@ mirror node for each transaction id and fails loudly if one cannot be found.
 
 ---
 
+## Security
+
+This service moves money, so it gets reviewed like something that moves money. `scripts/attack.js`
+is a re-runnable harness of the checks; all 11 pass as of 2026-09-12.
+
+Two real defects were found this way and fixed, both worth knowing about if you build something
+similar:
+
+**Anyone could release anyone's escrow.** `approve` and `reject` had no authorisation at all — a job
+id was sufficient to move someone else's money, and job ids are listed publicly on `/jobs`. A stranger
+released a job in testing. Fixed with a claim token issued once at payment: the server stores only
+its hash, compares in constant time, and never returns the hash over the wire.
+
+**A double-release that the tests could not see.** The state check and the state write sat in the
+same synchronous block on the local tier, so concurrent approvals could not interleave and the test
+passed. On the Hedera path there are four `await`s between that check and that write, so two
+concurrent approvals would both pass the check and both transfer real funds. The passing test gave
+false confidence about the only tier where money is real. Fixed by moving the state machine into an
+atomic compare-and-set in `src/store.js` that claims a job *before* any transfer, and reverts it to
+`held` if the transfer throws.
+
+Also closed: the evidence trail can no longer fail a request whose funds have already moved (a lost
+log line is bad, a 500 after the money moved is worse); `/demo/buy` spends the server's own account
+so it is refused on a live tier unless explicitly enabled; per-IP rate limits on every paid route;
+and an input cap.
+
 ## Honest status
 
 Written down, built, tested and proven are four different things. Where this stands:
 
 - **Tested, by running it:** the full buy → deliver → decide loop, all three endings, the evidence
-  trail, the deadline sweeper, and the worker's failover when a model key is dead.
+  trail, the deadline sweeper, the worker's failover when a model key is dead, and the 11 adversarial
+  cases in `scripts/attack.js`.
 - **Built but not yet tested:** every Hedera code path. It is written against the SDK and parses.
   Until `PROOF.md` in this repo shows mirror-node-confirmed transaction ids, treat it as unrun.
 - **Not claimed:** that escrow makes an agent's output correct. It does not. It proves who produced

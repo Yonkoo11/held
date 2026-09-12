@@ -17,6 +17,13 @@ tier on every receipt it writes. A demo on the bottom tier is still a real demo.
 
 ## Upgrades — missing one costs a tier, not the project
 
+- [ ] Test USDC on Hedera testnet — needed for: pricing the demo in a stablecoin, which is the story
+      this track is actually about — how: <https://faucet.circle.com>, choose **Hedera Testnet**,
+      paste the buyer account id that `scripts/go-live.js` prints — cost: free, 20 USDC per address
+      per 2 hours — eta: 2 min — fallback: price in HBAR, which a fresh portal account already
+      holds; identical code path, `PAY_ASSET=hbar`, and the demo is unaffected except that the
+      asset reads as a gas token rather than a dollar.
+
 - [ ] LLM key for the worker agent (Anthropic / OpenAI / Gemini AI Studio) — needed for: the agent actually producing the deliverable that gets paid for — how: aistudio.google.com is the fastest free tier — cost: free tier — eta: 5 min — **note: both paid accounts are reported out of credit** — fallback: four tiers in priority order — (1) hosted paid key, (2) hosted free tier, (3) local ollama, (4) deterministic scripted worker returning a fixed deliverable, stamped `DETERMINISTIC WORKER — NO MODEL` on every receipt. Tier 4 still demonstrates the whole escrow mechanism, which is the actual product.
 - [ ] Arc testnet access + USDC faucet — needed for: the optional Arc agentic-economy track (second settlement rail) — how: https://arc.circle.com docs / faucet — cost: free — eta: 15 min — fallback: rail stays Hedera-only, Arc track is not entered, nothing else changes. The settlement layer sits behind one adapter interface for exactly this reason.
 - [ ] Bazantic account — needed for: the optional "Agentify a New API" track — how: https://bazantic.com — cost: free — eta: 10 min — fallback: the x402 gateway is still live and self-hosted; that track is not entered.

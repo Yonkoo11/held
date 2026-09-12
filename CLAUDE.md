@@ -54,10 +54,15 @@ All dated 2026-09-07 unless stated.
 
 ### Added 2026-09-12
 
-- **The demo prices in HBAR, not USDC, and that is deliberate.** `isHbarAsset`/`HBAR_ASSET_ID`
-  (`0.0.0`) are wired through the Hedera scheme, and a fresh portal account arrives funded with test
-  HBAR, whereas no working testnet **USDC** faucet was found. Pricing in HBAR reduces the human
-  steps in this whole project to exactly one: the portal signup. `PAY_ASSET=usdc` still works.
+- **CORRECTED 2026-09-12 (same day): there IS a testnet USDC faucet and it supports Hedera.**
+  <https://faucet.circle.com> lists **Hedera Testnet** among ~38 networks, **20 USDC per address
+  every 2 hours**. The earlier note here said no faucet was found — that was a failure to look, not
+  a fact about the world, and it nearly cost the better demo. Circle's faucet is the canonical
+  source of testnet USDC; check it first for any chain.
+- **Asset policy:** HBAR (`0.0.0`, 8 decimals) stays the zero-friction default because a fresh
+  portal account is auto-funded with it. `PAY_ASSET=usdc` (`0.0.429274`, 6 decimals) is the stronger
+  demo and `scripts/go-live.js` now prints the faucet link with the buyer address, watches for the
+  USDC to land, and flips the env automatically if it does.
 - **HBAR has 8 decimals (tinybars), USDC has 6.** Amount conversion is per-asset; a fixed 6 would
   have underpaid by 100x on HBAR.
 - **HBAR needs no token association**, so the HTS association trap applies only to `PAY_ASSET=usdc`.

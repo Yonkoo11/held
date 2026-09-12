@@ -51,7 +51,7 @@ class LocalSettlement {
   async release(jobId, reason) {
     const l = readLedger();
     const h = l.held[jobId];
-    if (!h || h.state !== 'held') return { txId: null, error: 'nothing held for this job' };
+    if (!h) return { txId: null, error: 'nothing held for this job' };
     h.state = 'released'; h.reason = reason;
     l.entries.push({ jobId, kind: 'release', amount: h.amount, to: h.scheduledTo, reason, at: Date.now(), tier: 'local-standin' });
     writeLedger(l);
@@ -61,7 +61,7 @@ class LocalSettlement {
   async refund(jobId, reason) {
     const l = readLedger();
     const h = l.held[jobId];
-    if (!h || h.state !== 'held') return { txId: null, error: 'nothing held for this job' };
+    if (!h) return { txId: null, error: 'nothing held for this job' };
     h.state = 'refunded'; h.reason = reason;
     l.entries.push({ jobId, kind: 'refund', amount: h.amount, to: h.payer, reason, at: Date.now(), tier: 'local-standin' });
     writeLedger(l);
@@ -150,7 +150,7 @@ class HederaSettlement {
   async release(jobId, reason) {
     const { ScheduleDeleteTransaction } = await import('@hiero-ledger/sdk');
     const l = readLedger(); const h = l.held[jobId];
-    if (!h || h.state !== 'held') return { txId: null, error: 'nothing held for this job' };
+    if (!h) return { txId: null, error: 'nothing held for this job' };
     const client = await this.#client();
     if (h.scheduleId) {
       try { await new ScheduleDeleteTransaction().setScheduleId(h.scheduleId).execute(client); } catch { /* already gone */ }
@@ -164,7 +164,7 @@ class HederaSettlement {
   async refund(jobId, reason) {
     const { ScheduleDeleteTransaction } = await import('@hiero-ledger/sdk');
     const l = readLedger(); const h = l.held[jobId];
-    if (!h || h.state !== 'held') return { txId: null, error: 'nothing held for this job' };
+    if (!h) return { txId: null, error: 'nothing held for this job' };
     const client = await this.#client();
     if (h.scheduleId) {
       try { await new ScheduleDeleteTransaction().setScheduleId(h.scheduleId).execute(client); } catch { /* already gone */ }

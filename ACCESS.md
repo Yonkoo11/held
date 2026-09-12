@@ -11,8 +11,20 @@ tier on every receipt it writes. A demo on the bottom tier is still a real demo.
 
 ## Hard requirements for the tracks we are entering
 
-- [ ] Hedera testnet account + ED25519 key — needed for: HCS evidence topic, scheduled release transaction, EVM escrow deploy — how: https://portal.hedera.com/dashboard (email signup, testnet HBAR auto-funded) — cost: free — eta: 10 min — fallback: local anvil EVM + a file-backed append-only log with the same interface; every receipt and the UI banner read `LOCAL SIMULATION — NOT HEDERA TESTNET`. Demo runs end to end, but the Hedera track cannot be entered on this tier.
+- [ ] Hedera testnet account + ED25519 key — needed for: HCS evidence topic, scheduled release transaction, EVM escrow deploy — how: https://portal.hedera.com/dashboard (email signup, testnet HBAR auto-funded) — cost: free — eta: 10 min — fallback: local anvil EVM + a file-backed append-only log with the same interface; every receipt and the UI banner read `a local simulation standing in for Hedera testnet`. Demo runs end to end, but the Hedera track cannot be entered on this tier.
 - [x] Blocky402 facilitator — **PROBED 2026-09-07: no account and no API key needed.** The site states "Testnet MVP Ready - Open Access, No API Key Required", and it is MIT-licensed and self-hostable (`blockydevs/blocky402`). Packages `@x402/core`, `@x402/fetch`, `@x402/hedera` all resolve on npm at v2.25.0, published 2026-09-03/04. — fallback: self-host the same MIT facilitator locally, or the reference PoC at github.com/hedera-dev/x402-inference-pay-per-request-poc; identical flow, still Hedera.
+- [x] **Domain: `heldprotocol.xyz`, bought 2026-09-12.** Registered at Namecheap. **Not yet pointing
+      anywhere** — as of this line it has no nameservers and no A record, so it resolves to nothing.
+      Two ways to finish it, and they differ on one thing that matters:
+      **(a) Redirect.** Namecheap's own URL-redirect record sends it to the tunnel. Five minutes, no
+      account anywhere else, no key leaves this machine. The visitor lands on an ngrok URL and sees
+      the ngrok warning page first, and the target has to be re-pointed each time the tunnel churns.
+      **(b) Host it.** Deploy the seller to Render or Fly and CNAME the domain at it. Stable URL, no
+      warning page. It also means **the escrow private key goes onto a third-party host**. On testnet
+      the blast radius is a funded test account and nothing else, but it is a real decision and it is
+      Dami's to make, not mine.
+      Recommendation with the deadline this close: (a) now so the domain resolves, and only attempt
+      (b) if everything else is already filed.
 - [ ] Public HTTPS URL for the x402-gated service — needed for: the Hedera track wording is "host a live x402-gated service", so a judge must be able to hit it — how: cloudflared quick tunnel (no account) or `ngrok http` — cost: free — eta: 5 min — fallback: bind localhost and ship a scripted `curl` transcript plus recorded run; submission states plainly that the URL was a tunnel and may be down.
 
 ## Upgrades — missing one costs a tier, not the project
@@ -24,7 +36,7 @@ tier on every receipt it writes. A demo on the bottom tier is still a real demo.
       holds; identical code path, `PAY_ASSET=hbar`, and the demo is unaffected except that the
       asset reads as a gas token rather than a dollar.
 
-- [ ] LLM key for the worker agent (Anthropic / OpenAI / Gemini AI Studio) — needed for: the agent actually producing the deliverable that gets paid for — how: aistudio.google.com is the fastest free tier — cost: free tier — eta: 5 min — **note: both paid accounts are reported out of credit** — fallback: four tiers in priority order — (1) hosted paid key, (2) hosted free tier, (3) local ollama, (4) deterministic scripted worker returning a fixed deliverable, stamped `DETERMINISTIC WORKER — NO MODEL` on every receipt. Tier 4 still demonstrates the whole escrow mechanism, which is the actual product.
+- [ ] LLM key for the worker agent (Anthropic / OpenAI / Gemini AI Studio) — needed for: the agent actually producing the deliverable that gets paid for — how: aistudio.google.com is the fastest free tier — cost: free tier — eta: 5 min — **note: both paid accounts are reported out of credit** — fallback: four tiers in priority order — (1) hosted paid key, (2) hosted free tier, (3) local ollama, (4) deterministic scripted worker returning a fixed deliverable, stamped `a deterministic responder with no model behind it` on every receipt. Tier 4 still demonstrates the whole escrow mechanism, which is the actual product.
 - [ ] Arc testnet access + USDC faucet — needed for: the optional Arc agentic-economy track (second settlement rail) — how: https://arc.circle.com docs / faucet — cost: free — eta: 15 min — fallback: rail stays Hedera-only, Arc track is not entered, nothing else changes. The settlement layer sits behind one adapter interface for exactly this reason.
 - [ ] Bazantic account — needed for: the optional "Agentify a New API" track — how: https://bazantic.com — cost: free — eta: 10 min — fallback: the x402 gateway is still live and self-hosted; that track is not entered.
 

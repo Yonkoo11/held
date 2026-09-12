@@ -381,8 +381,8 @@
 <header class="stage">
   <div class="lede">
     <h1>You pay first. The money <em>waits</em> until you have read what you bought.</h1>
-    <p>The 402 quote points at an escrow account instead of the seller's. You get the answer
-      straight away. The payment sits where you can see it, and it does not move until you say so.</p>
+    <p>The 402 quote points at an escrow account instead of the seller's, so paying does not hand
+      the money over. You get the answer straight away and the payment stays put until you decide.</p>
   </div>
 
   <div class="wire" id="wire" data-live="false">
@@ -395,17 +395,18 @@
         <div class="fig"><span id="price"></span><span class="u" id="unit"></span></div>
         <div class="clk">
           <span class="t" id="wclock" hidden></span>
-          <span class="c" id="wnote">per request, nothing in flight yet</span>
+          <span class="c" id="wnote">per request. Nothing is waiting on you yet.</span>
         </div>
       </div>
     </div>
   </div>
 
   <div class="next">
-    <p>Approve it and the seller gets paid. Reject it and you get refunded.</p>
-    <p>If you never come back, the clock runs out and <b>the seller gets paid anyway</b>. That last
-      one is deliberate. Without it a buyer could take the work and then simply go quiet, and nobody
-      would sell anything this way.</p>
+    <p>Approve it and the seller gets paid. If it was not what you asked for, reject it and the
+      money comes back to you.</p>
+    <p>And if you never come back at all, the clock runs out and <b>the seller gets paid anyway</b>.
+      That part is deliberate: without it a buyer could read the answer, go quiet, and keep the
+      money, which is not a market anyone would sell into.</p>
   </div>
 </header>
 
@@ -423,10 +424,10 @@
 
 <section class="register">
   <div class="reghead">
-    <span class="lab">What you have bought</span>
+    <span class="lab">What you bought</span>
     <span class="lab" id="count"></span>
   </div>
-  <div id="jobs"><p class="empty">Nothing yet. Ask the agent something and the wire above goes live.</p></div>
+  <div id="jobs"><p class="empty">You have not bought anything yet. Ask the agent a question and it turns up here with a clock on it.</p></div>
 </section>
 
 <footer>
@@ -491,8 +492,8 @@ async function loadHealth() {
   $('price').textContent = h.price;
   $('unit').textContent = h.asset.symbol;
   $('caveat').textContent = live
-    ? `${h.price} ${h.asset.symbol}. This is Hedera testnet, so the transactions are real and the money is not.`
-    : `${h.price} ${h.asset.symbol}. Running on the local stand-in, so nothing here touches Hedera.`;
+    ? `${h.price} ${h.asset.symbol} a question, settled on Hedera testnet. Real transactions on a public network, paid with test funds.`
+    : `${h.price} ${h.asset.symbol} a question. Running on the local stand-in, so none of this reaches Hedera.`;
   const box = $('tiers');
   clear(box);
   for (const [k, v] of Object.entries(h.tiers || {})) {
@@ -534,7 +535,7 @@ function jobNode(j, entryNo) {
   if (held) {
     edgeParts.push(el('div', { class: 'clock', 'data-deadline': String(j.deadline) }, [
       el('div', { class: 't', text: countdown(j.deadline - Date.now()) }),
-      el('div', { class: 'c', text: 'left to decide' }),
+      el('div', { class: 'c', text: 'left for you to decide' }),
     ]));
   }
   if (held && mine) {
@@ -571,7 +572,7 @@ function jobNode(j, entryNo) {
     const tail = [j.decisionReason, j.decisionTx].filter(Boolean).join('  ·  ');
     if (tail) bodyParts.push(el('div', { class: 'outcome', text: tail }));
   } else if (!mine) {
-    bodyParts.push(el('div', { class: 'outcome', text: 'paid for in another browser, so only that buyer can decide on it' }));
+    bodyParts.push(el('div', { class: 'outcome', text: 'someone paid for this in another browser, so only they can approve or refund it' }));
   }
 
   const trail = el('div', { class: 'trail' });
@@ -606,7 +607,7 @@ async function loadJobs() {
     if (lastSignature !== 'empty') {
       lastSignature = 'empty';
       clear(box);
-      box.appendChild(el('p', { class: 'empty', text: 'Nothing yet. Ask the agent something and the wire above goes live.' }));
+      box.appendChild(el('p', { class: 'empty', text: 'You have not bought anything yet. Ask the agent a question and it turns up here with a clock on it.' }));
     }
     return;
   }

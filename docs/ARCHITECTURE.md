@@ -80,7 +80,7 @@ actually run, prints which, and stamps it on every receipt, evidence entry, proo
 
 | component | full | degraded |
 |---|---|---|
-| settlement | Hedera testnet escrow account | local JSON ledger, `LOCAL SIMULATION — NOT HEDERA TESTNET` |
+| settlement | Hedera testnet escrow account | local JSON ledger, `a local simulation standing in for Hedera testnet` |
 | evidence | HCS topic, readable by anyone | append-only JSONL file, every line marked degraded |
 | worker | Anthropic → OpenAI → Gemini | local ollama → deterministic responder that says no model ran |
 

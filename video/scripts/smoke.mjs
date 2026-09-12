@@ -1,0 +1,16 @@
+import { launch, record, settled, sleep, smoothScrollTo } from './lib.mjs';
+const { browser, page } = await launch();
+await page.goto('http://127.0.0.1:4021/', { waitUntil: 'networkidle0' });
+await settled(page);
+const stop = await record(page, 'smoke');
+await sleep(1500);
+await smoothScrollTo(page, 900, 1500);
+await sleep(1500);
+await stop();
+await page.screenshot({ path: '/private/tmp/claude-501/-Users-yonko-Projects-outcomelock/c9cc1d55-b744-4275-8fa0-cec37935b461/scratchpad/page-bottom.png' });
+const h = await page.evaluate(() => ({ h: document.documentElement.scrollHeight, deal: document.querySelector('.deal').getBoundingClientRect().top + window.scrollY, reg: document.querySelector('.register').getBoundingClientRect().top + window.scrollY }));
+console.log(JSON.stringify(h));
+await page.goto('https://hashscan.io/testnet/account/0.0.10495061', { waitUntil: 'networkidle2', timeout: 60000 });
+await sleep(3000);
+await page.screenshot({ path: '/private/tmp/claude-501/-Users-yonko-Projects-outcomelock/c9cc1d55-b744-4275-8fa0-cec37935b461/scratchpad/hashscan.png' });
+await browser.close();

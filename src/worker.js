@@ -221,8 +221,8 @@ function runDeterministic(question) {
     'To answer this properly an agent would need:',
     ...words.filter((w) => w.length > 6).slice(0, 5).map((w) => `  - source material on "${w.replace(/[^\w-]/g, '')}"`),
     '',
-    'No model was available on this run, so no answer is asserted. This deliverable exists so the',
-    'buyer has something concrete to approve or reject, which is what the escrow is being tested on.',
+    'No model was available for this run, so none of the above is an answer. You are seeing it',
+    'because the escrow needs something real to approve or reject.',
   ].join('\n');
 }
 

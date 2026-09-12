@@ -1,0 +1,20 @@
+{
+  "marks": {
+    "top": 0,
+    "box": 5.82,
+    "typing": 6.96,
+    "pay": 10.66,
+    "held": 32.68,
+    "row": 35.49,
+    "wire": 43.3,
+    "row2": 48.62,
+    "approve": 50.12,
+    "released": 57.38,
+    "txid": 57.38,
+    "end": 62.39
+  },
+  "question": "When does a Hedera scheduled transaction execute?",
+  "byline": "deterministic (failed over) · held-worker:5064168db185e588",
+  "outcome": "looks right  ·  0.0.10491999@1789230887.394753895",
+  "deliverableHead": "No model ran for this request.Question received: When does a Hedera scheduled transaction execute?Length: 7 words.To answer this properly an agent would need:so"
+}

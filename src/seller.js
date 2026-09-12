@@ -364,7 +364,7 @@ async function decide(req, res, action) {
   } catch (e) {
     store.transition(id, 'settling', 'held', {});      // hand it back, nothing moved
     console.error(`[decide] settlement threw for ${id}: ${e.message}`);
-    return res.status(502).json({ error: `settlement failed, job left held: ${e.message}` });
+    return res.status(502).json({ error: `settlement failed, so your payment is still sitting in escrow: ${e.message}` });
   }
   if (result.error) {
     store.transition(id, 'settling', 'held', {});
@@ -408,7 +408,7 @@ async function sweep() {
           decisionTx: st.txId, decidedAt: Date.now(),
         });
         if (claim.ok) {
-          await record(job.id, 'released', { reason: 'review window expired', tx: st.txId,
+          await record(job.id, 'released', { reason: 'you did not decide in time, so the deadline released it to the seller', tx: st.txId,
                                              by: 'hedera-scheduled-transaction', scheduleId: job.scheduleId });
           console.log(`[sweep] schedule ${job.scheduleId} executed for ${job.id}`);
         }
@@ -421,13 +421,13 @@ async function sweep() {
     }
 
     const claim = store.transition(job.id, 'held', 'settling',
-      { decisionReason: 'review window expired' });
+      { decisionReason: 'you did not decide in time, so the deadline released it to the seller' });
     if (!claim.ok) continue;                       // a buyer decided first; leave it alone
     try {
       const r = await settlement.release(job.id, 'nobody decided, so the deadline released it');
       if (r.error) { store.transition(job.id, 'settling', 'held', {}); continue; }
       store.transition(job.id, 'settling', 'released', { decisionTx: r.txId, decidedAt: Date.now() });
-      await record(job.id, 'released', { reason: 'review window expired', tx: r.txId, by: 'deadline-sweep' });
+      await record(job.id, 'released', { reason: 'you did not decide in time, so the deadline released it to the seller', tx: r.txId, by: 'deadline-sweep' });
       console.log(`[sweep] auto-released ${job.id}`);
     } catch (e) {
       store.transition(job.id, 'settling', 'held', {});

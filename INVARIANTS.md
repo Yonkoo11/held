@@ -86,7 +86,7 @@ The app never presents degraded output as full output.
 - **Enforced by** `config.js` tier selection, stamped onto every evidence entry, receipt, proof file
   and UI badge.
 - **Observable**: with no model key the worker returns text beginning
-  `DETERMINISTIC WORKER — NO MODEL RAN.`
+  `No model ran for this request.`
 
 ### I9 — A local run never claims anything about Hedera
 - **Enforced by** `prove-live.js`, which writes *"This run was on the local stand-in tier. It proves

@@ -1,250 +1,161 @@
 # OutcomeLock
 
-**x402 pays the moment a request is served. That is wrong for agent work, where you only find out
-whether you got anything useful after you have already paid.**
+**An x402-gated agent service on Hedera where the payment goes into escrow instead of to the seller,
+and is released only once the buyer has seen what the agent produced — or by a Hedera scheduled
+transaction at the review deadline if they never look.**
 
-OutcomeLock is an x402-gated agent service on Hedera where the payment goes into escrow instead of
-into the seller's account. The buyer gets the deliverable immediately. The seller gets the money
-once the buyer has approved it, or once a review deadline passes — whichever comes first. Every
-step is written to a public consensus log, including which version of the agent produced the work.
+Three real paid requests settled on Hedera testnet on 2026-09-12. All three endings — approved,
+rejected, and released by the chain's own timer — confirmed by an independent read of the mirror
+node. Escrow [`0.0.10495061`](https://hashscan.io/testnet/account/0.0.10495061) · evidence topic
+[`0.0.10495064`](https://hashscan.io/testnet/topic/0.0.10495064) · transaction ids in
+[`PROOF.md`](PROOF.md).
 
-Built for ETHOnline 2026, Hedera "AI & Agentic Payments" track.
+Built for ETHOnline 2026, Hedera "AI & Agentic Payments".
 
 ---
 
-## The problem, concretely
+## The problem
 
-An agent charges you 0.05 HBAR to answer a question. Under plain x402 the money is gone the instant
-the HTTP response is written — before you have read a word of it. If the agent returns garbage, a
-hallucination, or an empty string, your recourse is a support email.
+x402 pays the seller the instant the response is written — before you have read a word of it. For a
+weather API that is fine. For agent work it is backwards: you find out whether you got anything
+useful *after* the money is gone, and your recourse is a support email.
 
-Sellers have the mirror-image problem. "Just refund on request" means any buyer can consume the work
-and then claw the money back.
+Sellers have the mirror-image problem. "Refund on request" means any buyer can consume the work and
+then claw the payment back.
 
-OutcomeLock splits the difference with three endings and no trusted middleman deciding between them:
+OutcomeLock changes one field — `payTo` becomes an escrow account — and gets three endings, with no
+trusted party choosing between them:
 
-| what the buyer does | what happens to the money |
+| the buyer | the money |
 |---|---|
 | approves | released to the seller immediately |
 | rejects | refunded to the buyer immediately |
-| nothing | released to the seller when the review window expires |
+| does nothing | released to the seller by a Hedera scheduled transaction at the deadline |
 
-The third row is the one that makes this safe for sellers. Silence is not a veto.
-
----
-
-## Architecture
-
-```
-  buyer agent                 seller service                    Hedera
- ─────────────               ───────────────                 ────────────
-      │  POST /work                  │                             │
-      ├─────────────────────────────►│                             │
-      │  402 + payment requirements  │                             │
-      │◄─────────────────────────────┤  payTo = ESCROW,            │
-      │                              │  not the seller             │
-      │  POST /work + X-PAYMENT      │                             │
-      ├─────────────────────────────►│                             │
-      │                              │──── /verify ───► Blocky402  │
-      │                              │                  facilitator│
-      │                              │  agent does the work        │
-      │                              │──── /settle ───► ──────────►│ funds land
-      │                              │                             │ in escrow
-      │                              │──── HCS message ───────────►│ evidence
-      │                              │──── ScheduleCreate ────────►│ auto-release
-      │  deliverable + jobId         │                             │   armed
-      │◄─────────────────────────────┤                             │
-      │                              │                             │
-      │  POST /jobs/:id/approve      │                             │
-      ├─────────────────────────────►│──── transfer ──────────────►│ seller paid
-      │                              │──── ScheduleDelete ────────►│ timer cancelled
-```
-
-| file | what it does |
-|---|---|
-| `src/seller.js` | the x402-gated service. Quotes the price, verifies and settles through Blocky402, runs the agent, arms the auto-release |
-| `src/settlement.js` | escrow. Holds, releases, refunds, and schedules. Two implementations behind one interface |
-| `src/evidence.js` | the append-only trail. HCS topic, or a local file on the degraded tier |
-| `src/worker.js` | the agent doing the paid work, and the version id that identifies it |
-| `src/payment.js` | builds the `X-PAYMENT` payload |
-| `src/hedera-key.js` | resolves and verifies the operator key against the ledger, instead of guessing its type |
-| `src/buyer.js` | the consuming agent, as a CLI |
-| `scripts/go-live.js` | one command to create the escrow/buyer accounts and the evidence topic |
-| `scripts/prove-live.js` | runs every path, then independently re-reads the mirror node to check it actually happened. Writes `PROOF.md` |
-
-### Which Hedera pieces are load-bearing
-
-Remove any one of these and there is no product:
-
-- **x402 via Blocky402** — the paywall itself. The facilitator's `/supported` advertises
-  `exact` on `hedera:testnet` and acts as fee payer (`0.0.7162784`), so a buyer needs no HBAR for gas.
-- **The escrow account** — `payTo` in the payment requirements. This single field is the whole idea.
-- **Scheduled transactions** — the auto-release. Armed at payment time with the review deadline as
-  its expiry, deleted if the buyer decides early.
-- **HCS** — the evidence trail. Anyone can read it from the mirror node without asking us.
-
-### Agent identity
-
-Every deliverable carries an agent version id: a hash of the prompt template, the model name, and
-the worker's own source. Change any of them and the id changes. "Which version of the agent produced
-this" is therefore a checkable fact rather than a claim — and it is what the buyer is really
-approving when they release the money.
+The third row is what makes it safe for sellers. **Silence is not a veto.**
 
 ---
 
-## Payment flow, step by step
-
-1. Buyer `POST /work` with no payment header.
-2. Server replies **402** with `accepts[0]` = `{ scheme: "exact", network: "hedera:testnet",
-   asset, amount, payTo: <escrow>, maxTimeoutSeconds, extra: { feePayer } }`, plus an `outcomelock`
-   extension block stating the review window and the release policy.
-3. Buyer signs a Hedera transfer with `@x402/hedera`, base64-encodes the payload, retries with
-   `X-PAYMENT`.
-4. Server calls the facilitator's `/verify` **before doing any work**.
-5. Server runs the agent.
-6. Server calls `/settle`. Funds move buyer → **escrow**.
-7. Server records the deposit, arms a scheduled release at `now + review window`, and writes
-   `paid`, `delivered` and `escrow-scheduled` to the evidence trail.
-8. Buyer reads the deliverable, then approves or rejects — or does nothing and the schedule fires.
-
----
-
-## Setup
+## Try it
 
 ```bash
-npm install          # also installs the pre-commit secret guard
-npm run check:secrets # confirm nothing can leak before you put a key anywhere
+npm install                 # also installs a pre-commit secret guard
+npm run seller              # runs on a local stand-in; no account needed
+npm run buyer -- ask "What is a Hedera scheduled transaction?"
 ```
+
+It works end to end immediately, and says on every receipt that settlement is simulated. To run it
+for real, see [Running on Hedera](#running-on-hedera).
 
 | command | what it does |
 |---|---|
-| `npm run seller` | start the service |
-| `npm run buyer -- ask "..."` | the consuming agent |
-| `npm run go-live` | create the Hedera accounts and evidence topic |
-| `npm run prove` | run every path, verify against the mirror node, write `PROOF.md` |
-| `npm test` | offline transaction build + key handling + the three endings |
-| `npm run test:keys` | key parsing across both key types and all three formats |
-| `npm run regression` | the three endings, polled rather than timed |
-| `npm run attack` | 16 adversarial checks |
-| `npm run dryrun` | build every Hedera transaction offline, no account needed |
-| `npm run check:secrets` | audit secret hygiene |
+| `npm test` | offline transaction build + key handling + all three endings |
+| `npm run attack` | 16 adversarial checks against a running seller |
+| `npm run prove` | runs every path for real, then re-reads the mirror node to confirm each id |
+| `npm run dryrun` | builds every Hedera transaction offline, no account needed |
+| `npm run check:secrets` | audits permissions, git tracking and the whole of git history |
 
-### Run it without any account (degraded tier)
+---
 
-```bash
-npm run seller
-node src/buyer.js ask "your question here"
-```
+## Which Hedera pieces are load-bearing
 
-It works end to end immediately. Settlement and evidence run on local stand-ins, and **every
-receipt, log line and proof file says so**. This tier demonstrates the product logic and proves
-nothing whatsoever about Hedera.
+Remove any one and there is no product:
 
-### Run it on Hedera testnet
+- **x402 via Blocky402** — the paywall. Its `/supported` advertises `exact` on `hedera:testnet` and
+  names the fee payer `0.0.7162784`, so a buying agent needs no HBAR for gas at all.
+- **The escrow account** — the `payTo`. One field, and the entire idea.
+- **Scheduled transactions** — the deadline release. Armed at payment with `waitForExpiry`, deleted
+  if the buyer decides early, and *observed* rather than repeated by the service.
+- **HCS** — the evidence trail: what was asked, which agent version answered, the deliverable hash,
+  and the decision. Readable from the mirror node without trusting either party.
 
-1. Create a free account at <https://portal.hedera.com/register>. It is instant and comes funded
-   with test HBAR.
-2. Copy `.env.example` to `.env` and fill in `HEDERA_OPERATOR_ID` and `HEDERA_OPERATOR_KEY`.
-   Edit the file directly — never paste a key into a chat window.
+**Agent identity.** Every deliverable carries a version id hashed from the prompt template, the model
+name and the worker's own source. Change any of them and it changes — so "which build produced this"
+is checkable, and it is what the buyer is really approving.
 
-   Any key format works: ECDSA or ED25519, DER or raw hex, `0x`-prefixed or not. You do not need
-   to know which you have. This matters more than it sounds: the portal issues **ECDSA** by
-   default, and `PrivateKey.fromStringED25519()` accepts a raw ECDSA key *without complaint* and
-   returns a different key — the mistake then surfaces as `INVALID_SIGNATURE` from the network,
-   which reads like a connectivity fault. So the app asks the mirror node what key the account
-   actually has, parses to match, verifies the private key really derives that public key, and
-   refuses to start with a sentence telling you what to fix if it does not.
-3. ```bash
-   node --env-file=.env scripts/go-live.js
-   ```
-   This creates the escrow account, the buyer account and the evidence topic, and writes the new
-   ids and keys back into `.env`. It prints public ids only.
-   While it runs it will print the buyer's account id and pause. Claim test USDC for it at
-   <https://faucet.circle.com> — choose **Hedera Testnet**, paste the address, 20 USDC per address
-   every two hours. It watches for the USDC to land and switches the service to `PAY_ASSET=usdc`
-   automatically. Skip it and everything stays on HBAR, which needs nothing further.
-4. ```bash
-   node --env-file=.env src/seller.js          # should now print settlement tier "hedera-testnet"
-   node --env-file=.env scripts/prove-live.js  # runs every path and writes PROOF.md
-   ```
+---
 
-`prove-live.js` does not take the server's word for anything: after the run it queries the Hedera
-mirror node for each transaction id and fails loudly if one cannot be found.
+## Running on Hedera
+
+1. Create a free testnet account at <https://portal.hedera.com/register> — instant, auto-funded.
+2. Copy `.env.example` to `.env` and fill in `HEDERA_OPERATOR_ID` and `HEDERA_OPERATOR_KEY` by
+   editing the file directly. Any key format works — ECDSA or ED25519, DER or raw hex, `0x` or not.
+   You do not need to know which you have; the app asks the ledger and refuses to start on a mismatch.
+3. `npm run go-live` — creates the escrow and buyer accounts and the evidence topic, writes them
+   back, and prints only public ids. It pauses with the buyer's account id so you can claim test
+   USDC at <https://faucet.circle.com> ("Hedera Testnet"); skip it and everything stays on HBAR.
+4. `npm run seller`, then `npm run prove`.
+
+`prove-live.js` takes nothing on trust: after the run it queries the mirror node for every
+transaction id and fails loudly if one cannot be found.
 
 ### Configuration
 
 | variable | default | meaning |
 |---|---|---|
-| `PAY_ASSET` | `hbar` | `hbar` or `usdc` (testnet USDC `0.0.429274`, claimable from <https://faucet.circle.com>). HBAR is the default only because a fresh account already holds some |
-| `DEMO_BUY` | off | lets the web page buy using the server's own account. Off by default once settlement is real, because a public URL plus a funded key empties the key |
-| `MAX_QUESTION_CHARS` | `2000` | input cap; every request costs a model run and a payment |
-| `PRICE` | `0.05` | price per request, in whole units of the asset |
-| `REVIEW_MINUTES` | `10` | how long the buyer has before the money auto-releases |
-| `FACILITATOR_URL` | `https://api.testnet.blocky402.com` | the x402 facilitator |
-| `PORT` | `4021` | seller port |
+| `PAY_ASSET` | `hbar` | `hbar`, or `usdc` (testnet `0.0.429274`) |
+| `PRICE` | `0.05` | price per request, whole units |
+| `REVIEW_MINUTES` | `10` | how long the buyer has before auto-release |
+| `SCHEDULE_GRACE_SECONDS` | `90` | how long past expiry to wait for the chain before releasing directly |
+| `DEMO_BUY` | off | lets the web page buy using the server's own account. Refused on a live tier unless set |
+| `MAX_QUESTION_CHARS` | `2000` | input cap |
 
 ---
 
-## Secrets
+## Documentation
 
-Nothing secret belongs in this repository, and three independent things enforce that rather than
-one:
+| | |
+|---|---|
+| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | the state machine, who releases the money, tiers, files |
+| [`INVARIANTS.md`](INVARIANTS.md) | the rules this system must never break, how each is enforced and tested |
+| [`.agents/skills/x402-hedera/SKILL.md`](.agents/skills/x402-hedera/SKILL.md) | measured behaviour of the x402 and Hedera SDKs — read before writing a call |
+| [`PROOF.md`](PROOF.md) | the last live run, with mirror-node-confirmed transaction ids |
+| [`CLAUDE.md`](CLAUDE.md) | verified facts and open unknowns, each dated |
 
-- **`.gitignore`** keeps the environment file out. That handles the file you expect.
-- **A pre-commit guard** (`node scripts/install-hooks.js`, run automatically on `npm install`)
-  refuses any commit containing an environment file, a Hedera DER key, an Anthropic/OpenAI/Google/AWS
-  key shape, a PEM private key block, or the runtime files holding buyer claim tokens. That handles
-  the file you don't expect — a key pasted into a README or a scratch script. It prints the file, never
-  the value. Verified by staging a fake key and watching the commit be refused.
-- **`npm run check:secrets`** audits the whole setup: file permissions, whether git ignores and is
-  not tracking it, secret-shaped strings across every tracked file *and the entire git history*, and
-  whether the guard is installed. It prints variable names and lengths, never values, so it is safe
-  to run with somebody watching.
-
-The environment file is `chmod 600`. Keys go into it by editing it directly — never through a chat
-window, a screenshot, or a note app. `scripts/go-live.js` writes the accounts it creates straight
-into that file and prints only public ids.
+---
 
 ## Security
 
-This service moves money, so it gets reviewed like something that moves money. `scripts/attack.js`
-is a re-runnable harness of the checks; all 16 pass as of 2026-09-12.
+This moves money, so it was reviewed like something that moves money. `npm run attack` is a
+re-runnable harness; 16 of 16 pass. Two defects were found that way and a third by a publish gate:
 
-Two real defects were found this way and fixed, both worth knowing about if you build something
-similar:
+**Anyone could release anyone's escrow.** Approve and reject had no authorisation at all, and job
+ids are listed publicly. A stranger released a job in testing and got `200 OK`. Now gated by a
+one-time claim token, stored only as a hash and compared in constant time.
 
-**Anyone could release anyone's escrow.** `approve` and `reject` had no authorisation at all — a job
-id was sufficient to move someone else's money, and job ids are listed publicly on `/jobs`. A stranger
-released a job in testing. Fixed with a claim token issued once at payment: the server stores only
-its hash, compares in constant time, and never returns the hash over the wire.
+**A double payout the tests could not see.** The state check and the state write sat in one
+synchronous block on the local tier, so concurrent approvals could not interleave and the test
+passed. The Hedera path has four `await`s in that gap — and it paid twice for one job, 13 seconds
+apart, visible on chain. Fixed with an atomic claim before any transfer.
 
-**A double-release that the tests could not see.** The state check and the state write sat in the
-same synchronous block on the local tier, so concurrent approvals could not interleave and the test
-passed. On the Hedera path there are four `await`s between that check and that write, so two
-concurrent approvals would both pass the check and both transfer real funds. The passing test gave
-false confidence about the only tier where money is real. Fixed by moving the state machine into an
-atomic compare-and-set in `src/store.js` that claims a job *before* any transfer, and reverts it to
-`held` if the transfer throws.
+**A paid job that was never recorded.** A transient mirror-node blip threw *after* settlement, so
+the money reached escrow and no job existed. Fixed by recording the job before arming the timer and
+making arming best-effort — verified by injecting that failure deliberately.
 
-Also closed: the evidence trail can no longer fail a request whose funds have already moved (a lost
-log line is bad, a 500 after the money moved is worse); `/demo/buy` spends the server's own account
-so it is refused on a live tier unless explicitly enabled; per-IP rate limits on every paid route;
-an input cap; and upstream model-provider errors are redacted and replaced with a safe category
-before they reach a buyer, because providers echo request details back in error bodies and those
-job records are served publicly.
+Also closed: rendering rebuilt as DOM nodes so user text can never become markup; upstream provider
+errors redacted and replaced with a safe category before reaching a buyer; `/demo/buy` refused on a
+live tier; per-IP rate limits; input caps.
+
+### Secrets
+
+Four independent layers, because one layer is how keys reach GitHub: `.gitignore`, `chmod 600`, a
+pre-commit guard that refuses env files and key shapes in any file, and `npm run check:secrets`
+which scans the entire git history. All four were verified by trying to defeat them.
+
+---
 
 ## Honest status
 
-Written down, built, tested and proven are four different things. Where this stands:
+Designed, built, tested and proven are four different things.
 
-- **Tested, by running it:** the full buy → deliver → decide loop, all three endings, the evidence
-  trail, the deadline sweeper, the worker's failover when a model key is dead, and the 11 adversarial
-  cases in `scripts/attack.js`.
-- **Built but not yet tested:** every Hedera code path. It is written against the SDK and parses.
-  Until `PROOF.md` in this repo shows mirror-node-confirmed transaction ids, treat it as unrun.
-- **Not claimed:** that escrow makes an agent's output correct. It does not. It proves who produced
-  what, when, with which version, and that the buyer had a real chance to look before the money
-  moved. Nothing more.
+- **Proven on testnet:** all three endings, six transactions, every one confirmed by re-reading the
+  mirror node — including a scheduled transaction executing at expiry with the service only watching.
+- **Tested:** 16 adversarial checks, 13 regression checks including deliberate fault injection, 10
+  key-handling checks, 7 offline transaction builds.
+- **Not claimed:** that escrow makes an agent's output correct. It proves who produced what, when,
+  with which version, and that the buyer had a real chance to look before the money moved.
+- **Not production:** the escrow key is held by the service. A real deployment needs a threshold key
+  or a contract. The public URL is a tunnel and will not outlive the demo.
 
 ## Licence
 

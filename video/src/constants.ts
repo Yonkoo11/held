@@ -55,7 +55,16 @@ export type Scene =
 const clipFrames = (segments: Segment[]) => segments.reduce((a, s) => a + sec(s.to - s.from), 0);
 
 // Take 1: the box comes into view, the question is typed, Pay and ask, then the wait.
-const paySeg: Segment[] = [{ from: M1.typing - 0.6, to: M1.held + 1.2 }];
+//
+// The wait is real and it is long: x402 verification, the agent actually thinking, then settlement
+// landing on Hedera. On this take that was 44 seconds, and ETHGlobal's own guidance is to cut
+// unnecessary waiting rather than sit in it. So the button is shown changing to "Settling on
+// Hedera", the dead middle is cut, and we come back for the last few seconds before the row lands.
+// Nothing is sped up; a chunk of stillness is removed.
+const paySeg: Segment[] = [
+  { from: M1.typing - 0.6, to: M1.pay + 6.5 },
+  { from: M1.held - 9, to: M1.held + 1.2 },
+];
 // Take 1: the row with its clock, the live wire, back to the row.
 const rowSeg: Segment[] = [{ from: M1.held + 1.2, to: M1.approve - 0.2 }];
 // Take 1: approve, RELEASED, the transaction id.
@@ -68,7 +77,7 @@ const deadlineSeg: Segment[] = [
 
 export const SCENES: readonly Scene[] = [
   {
-    key: "open", kind: "card", frames: sec(6.5), step: "",
+    key: "open", kind: "card", frames: sec(8), step: "",
     lines: ["Held."], small: "You pay first. The money waits until you have read what you bought.",
   },
   {
@@ -81,11 +90,12 @@ export const SCENES: readonly Scene[] = [
     ],
   },
   {
-    key: "quote", kind: "terminal", frames: sec(19), step: "2 of 7 · the 402",
+    key: "quote", kind: "terminal", frames: sec(23), step: "2 of 7 · the 402",
     titles: [
       { at: 0, text: "Here is the actual 402. Hedera testnet, priced in HBAR." },
       { at: 5, text: "payTo is the escrow account, not the seller's." },
       { at: 9.5, text: "The facilitator pays the gas, so the buying agent needs none." },
+      { at: 15, text: "And the extension states all three endings up front, before you pay." },
     ],
   },
   {
@@ -141,7 +151,7 @@ export const SCENES: readonly Scene[] = [
     ],
   },
   {
-    key: "close", kind: "card", frames: sec(9), step: "",
+    key: "close", kind: "card", frames: sec(11), step: "",
     lines: ["Held."], small: `Escrow for agent work, settled on Hedera  ·  escrow ${ESCROW}  ·  topic ${TOPIC}`,
   },
 ];

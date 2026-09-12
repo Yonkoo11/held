@@ -112,15 +112,33 @@ async function openAIOnce(question) {
 
 // Google AI Studio. The key goes in a header, never the query string, so it cannot end up in a
 // proxy log or an error URL.
-// Once a provider says it is out of credit, it will still be out of credit on the next request.
-// Re-asking cost ~7s of dead time per call. Remember it for the life of the process; a restart is
-// the natural way to re-check after topping up.
+// Once a provider says it is out of credit, it will still be out of credit on the next request, and
+// re-asking cost ~7s of dead time per call. So the tier gets parked.
+//
+// It gets parked for a while, not forever. The first version of this held a provider dead for the
+// life of the process, and that was wrong in a way only a long-running server shows: a free tier
+// whose daily quota resets, or a key that was topped up, stayed skipped until someone restarted the
+// service. On 2026-09-12 the demo fell all the way to the deterministic responder while Gemini was
+// working fine, because a blip hours earlier had parked it permanently. Quota comes back; the
+// breaker has to be willing to find out.
+const DEAD_FOR_MS = Number(process.env.PROVIDER_COOLDOWN_MS || 15 * 60 * 1000);
 const DEAD = new Map();
-const isDead = (tier) => DEAD.has(tier);
-function markDead(tier, why) {
-  if (!DEAD.has(tier)) console.log(`[worker] ${tier} is out of credit or quota — skipping it from now on`);
-  DEAD.set(tier, why);
+function isDead(tier) {
+  const at = DEAD.get(tier);
+  if (at === undefined) return false;
+  if (Date.now() - at < DEAD_FOR_MS) return true;
+  DEAD.delete(tier);
+  console.log(`[worker] ${tier} has been parked long enough, trying it again`);
+  return false;
 }
+function markDead(tier, why) {
+  if (!DEAD.has(tier)) {
+    console.log(`[worker] ${tier} is out of credit or quota, parking it for ${Math.round(DEAD_FOR_MS / 60000)} min`);
+  }
+  DEAD.set(tier, Date.now());
+  DEAD_WHY.set(tier, why);
+}
+const DEAD_WHY = new Map();
 const terminal = (msg) =>
   /insufficient_quota|no credits|credit balance|PerDay|RequestsPerDay|invalid_api_key|401|403/i.test(String(msg));
 
@@ -263,7 +281,7 @@ export async function doWork(question) {
       };
     }
     if (isDead(tier.name)) {
-      attempted.push({ tier: tier.name, error: `skipped — ${DEAD.get(tier.name)}` });
+      attempted.push({ tier: tier.name, error: `skipped: ${DEAD_WHY.get(tier.name)}` });
       continue;
     }
     const run = RUNNERS[tier.name];

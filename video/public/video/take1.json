@@ -3,18 +3,18 @@
     "top": 0,
     "box": 5.82,
     "typing": 6.96,
-    "pay": 10.66,
-    "held": 32.68,
-    "row": 35.49,
-    "wire": 43.3,
-    "row2": 48.62,
-    "approve": 50.12,
-    "released": 57.38,
-    "txid": 57.38,
-    "end": 62.39
+    "pay": 11.17,
+    "held": 54.94,
+    "row": 57.75,
+    "wire": 65.56,
+    "row2": 70.88,
+    "approve": 72.38,
+    "released": 78.39,
+    "txid": 78.4,
+    "end": 83.4
   },
-  "question": "When does a Hedera scheduled transaction execute?",
-  "byline": "deterministic (failed over) · held-worker:5064168db185e588",
-  "outcome": "looks right  ·  0.0.10491999@1789230887.394753895",
-  "deliverableHead": "No model ran for this request.Question received: When does a Hedera scheduled transaction execute?Length: 7 words.To answer this properly an agent would need:so"
+  "question": "What is a payment escrow, and why would a buyer want one?",
+  "byline": "ollama (after 3 failed) · llama3.1 · held-worker:108db2966abb3cb0",
+  "outcome": "looks right  ·  0.0.10491999@1789236365.559616050",
+  "deliverableHead": "A payment escrow is a temporary holding place for funds where they are safe from being misused by the seller until certain conditions are met. In this type of a"
 }

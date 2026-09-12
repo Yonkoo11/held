@@ -1,0 +1,29 @@
+{
+    "x402Version": 2,
+    "error": "payment required",
+    "resource": {
+        "url": "https://6a45-46-227-71-42.ngrok-free.app/work",
+        "description": "Research answer from an agent. 0.05 HBAR, held in escrow until you approve it.",
+        "mimeType": "application/json"
+    },
+    "accepts": [
+        {
+            "scheme": "exact",
+            "network": "hedera:testnet",
+            "asset": "0.0.0",
+            "amount": "5000000",
+            "payTo": "0.0.10495061",
+            "maxTimeoutSeconds": 120,
+            "extra": {
+                "feePayer": "0.0.7162784"
+            }
+        }
+    ],
+    "extensions": {
+        "held": {
+            "escrow": "0.0.10495061",
+            "reviewWindowMinutes": 20,
+            "releasePolicy": "approve pays the seller, reject refunds you, silence pays the seller at the deadline"
+        }
+    }
+}

@@ -60,11 +60,14 @@ export async function record(page, name) {
       const d = Math.max(0.001, next - frames[i].ts);
       lines.push(`file '${frames[i].file}'`, `duration ${d.toFixed(4)}`);
     }
-    lines.push(`file '${frames[frames.length - 1].file}'`);
+    // The concat demuxer needs a trailing entry, and without its own duration it repeats the
+    // previous one (a 7 s single-frame clip came out 14 s). One frame long, and -t caps the total.
+    lines.push(`file '${frames[frames.length - 1].file}'`, 'duration 0.0334');
+    const total = (endTs - frames[0].ts).toFixed(3);
     const list = `${dir}list.txt`;
     fs.writeFileSync(list, lines.join('\n') + '\n');
     const mp4 = `${OUT}${name}.mp4`;
-    execFileSync('ffmpeg', ['-y', '-loglevel', 'error', '-f', 'concat', '-safe', '0', '-i', list,
+    execFileSync('ffmpeg', ['-y', '-loglevel', 'error', '-f', 'concat', '-safe', '0', '-i', list, '-t', total,
       '-vf', 'scale=1920:1080:flags=lanczos,fps=30', '-c:v', 'libx264', '-crf', '17', '-preset', 'slow',
       '-pix_fmt', 'yuv420p', '-movflags', '+faststart', mp4]);
     fs.rmSync(dir, { recursive: true, force: true });

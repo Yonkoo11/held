@@ -1,0 +1,16 @@
+{
+  "fps": 30,
+  "total": 4018,
+  "scenes": {
+    "open": 195,
+    "claim": 360,
+    "quote": 570,
+    "pay": 826,
+    "row": 481,
+    "approve": 374,
+    "deadline": 600,
+    "proof-account": 267,
+    "proof-topic": 210,
+    "close": 270
+  }
+}

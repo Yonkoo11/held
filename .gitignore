@@ -9,3 +9,8 @@ data-test/
 proposals/
 var/
 tmp-fixture/
+
+# demo video build
+video/node_modules/
+video/out/
+video/public/video/

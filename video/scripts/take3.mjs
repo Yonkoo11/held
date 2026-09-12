@@ -16,12 +16,27 @@ async function dismissCookies(page) {
   await sleep(600);
 }
 
+/* HashScan's top nav also has a link called "Transactions"; the tab we want is the lowest element
+   on the page with that exact text. */
+async function clickTab(page, label) {
+  const hit = await page.evaluate((label) => {
+    const els = [...document.querySelectorAll('a,button,[role=tab],li,span,div')]
+      .filter((x) => x.textContent.trim() === label && x.children.length === 0);
+    els.sort((a, b) => b.getBoundingClientRect().top - a.getBoundingClientRect().top);
+    const t = els[0];
+    if (!t) return null;
+    t.click();
+    return Math.round(t.getBoundingClientRect().top);
+  }, label);
+  console.log(`[tab] ${label} at y=${hit}`);
+  await sleep(3500);
+}
+
 const { browser, page } = await launch();
 await page.goto(ESCROW, { waitUntil: 'networkidle2', timeout: 90000 });
 await dismissCookies(page);
 // The transactions tab is where the settlements and releases are listed.
-await page.evaluate(() => { const t = [...document.querySelectorAll('a,button,[role=tab]')].find((x) => x.textContent.trim() === 'Transactions'); if (t) t.click(); });
-await sleep(3500);
+await clickTab(page, 'Transactions');
 let stop = await record(page, 'take3-account');
 await sleep(2500);
 await smoothScrollTo(page, 700, 5000);
@@ -30,6 +45,7 @@ await stop();
 
 await page.goto(TOPIC, { waitUntil: 'networkidle2', timeout: 90000 });
 await dismissCookies(page);
+await clickTab(page, 'Messages');
 await sleep(2500);
 stop = await record(page, 'take3-topic');
 await sleep(2000);

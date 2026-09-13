@@ -34,69 +34,69 @@
   <span class="where">hedera testnet &middot; escrow <b id="escrow">&hellip;</b></span>
 </nav>
 
-<section class="page doc">
+<section class="page" style="padding-bottom:0">
   <h1>One field does all the work.</h1>
   <p class="standfirst">Held is an ordinary x402 resource server. A client that already speaks x402
     needs no changes to buy from it. The only unusual thing is where <code>payTo</code> points.</p>
+</section>
 
-  <h2>The challenge this server actually returns</h2>
-  <p>Ask for the resource without paying and you get a 402 with this body. It is fetched live from
-    our own <code>/work</code> below, so you are reading the real thing rather than an
-    illustration of it.</p>
-  <pre class="code" id="livequote">{
+<section class="page" style="padding-top:clamp(12px,1.8vw,22px);padding-bottom:0">
+ <div class="split">
+  <div class="prose doc">
+    <h2>The challenge this server returns</h2>
+    <p>Ask for the resource without paying and you get a 402 carrying the body beside this text. It
+      is fetched live from our own <code>/work</code> as you load the page, so you are reading the
+      real thing rather than an illustration that drifted out of date.</p>
+
+    <h3>Why <code>payTo</code> is the mechanism</h3>
+    <p>In a normal x402 flow <code>payTo</code> is the seller. Settlement is final the moment the
+      facilitator verifies the payment, and the buyer has no recourse at all. Here it names an
+      escrow account. Settlement still happens immediately and irreversibly, so the seller knows
+      the money is real, but it lands somewhere neither party can unilaterally take it from.</p>
+    <p>The <code>extensions.held</code> block then tells a client what happens next in a form it
+      can read, rather than one a human has to look up in documentation.</p>
+
+    <h3>Why the deferred flow could not be used instead</h3>
+    <p>The Hedera scheme declares <code>paymentFlows.default.supported</code> as
+      <code>["authorization", "upfront"]</code> with authorization as the default, so at first
+      glance settlement can simply be deferred past the request. It cannot be deferred far enough.
+      The Hedera x402 payload is a partially-signed Hedera transaction, and those expire in
+      minutes. A buyer review window is measured in hours or days. So Held holds the money in an
+      account rather than holding a signature.</p>
+  </div>
+
+  <div class="aside">
+    <div class="codehead"><span>402 Payment Required</span><span class="st" id="quotenote">fetching&hellip;</span></div>
+    <pre class="code dark" id="livequote">{
   "x402Version": 2,
-  "error": "payment required",
-  "resource": {
-    "url": "https://heldprotocol.xyz/work",
-    "description": "Research answer from an agent. 0.05 HBAR, held in escrow until you approve it.",
-    "mimeType": "application/json"
-  },
   "accepts": [{
     "scheme": "exact",
     "network": "hedera:testnet",
     "asset": "0.0.0",
     "amount": "5000000",
-    <b>"payTo": "0.0.10495061",</b>   <i>&lt;- the escrow account, not the seller</i>
-    "maxTimeoutSeconds": 120,
-    "extra": { "feePayer": "0.0.7162784" }
+    <b>"payTo": "0.0.10495061",</b>
+    "maxTimeoutSeconds": 120
   }],
-  "extensions": {
-    "held": {
-      "escrow": "0.0.10495061",
-      "reviewWindowMinutes": 10,
-      "releasePolicy": "approve pays the seller, reject refunds you, silence pays the seller at the deadline"
-    }
-  }
+  "extensions": { "held": { … } }
 }</pre>
-  <p id="quotenote" class="standfirst" style="font-size:13.5px">Fetching the live challenge&hellip;</p>
+  </div>
+ </div>
+</section>
 
-  <h3>Why <code>payTo</code> is the whole mechanism</h3>
-  <p>In a normal x402 flow <code>payTo</code> is the seller. Settlement is final the moment the
-    facilitator verifies the payment, and the buyer has no recourse. Here it names an escrow
-    account instead. Settlement still happens immediately and irreversibly, so the seller knows the
-    money is real, but it lands somewhere neither party can unilaterally take it from.</p>
-  <p>The <code>extensions.held</code> block tells a client what happens next, in a form it can read
-    rather than one a human has to look up in documentation.</p>
-
-  <h2>Why the deferred flow could not be used instead</h2>
-  <p>The Hedera scheme declares <code>paymentFlows.default.supported</code> as
-    <code>["authorization", "upfront"]</code>, with authorization as the default, so at first glance
-    settlement can simply be deferred past the request. It cannot be deferred far enough. The Hedera
-    x402 payload is a partially-signed Hedera transaction, and those expire in minutes. A buyer
-    review window is measured in hours or days. So Held holds the money in an account rather than
-    holding a signature.</p>
-
-  <h2>The endpoints</h2>
-  <div class="rows">
-    <div class="row"><span class="k">POST /work</span><span class="v">The gated route. Send <code>{ question }</code>. Without an <code>X-PAYMENT</code> header it answers 402 with the challenge above. With a valid one it returns the deliverable, a <code>claimToken</code>, and the escrow state.<span class="why">rate limited to 20 a minute</span></span><span class="t">x402</span></div>
-    <div class="row"><span class="k">POST /jobs/:id/approve</span><span class="v">Release escrow to the seller. Requires the <code>X-Job-Token</code> issued in the payment response.<span class="why">SHA-256 of the token is stored, compared with timingSafeEqual</span></span><span class="t">buyer only</span></div>
+<div class="band">
+  <h2 class="lab">The endpoints</h2>
+  <div class="rows" style="margin-top:14px">
+    <div class="row"><span class="k">POST /work</span><span class="v">The gated route. Send <code>{ question }</code>. Without an <code>X-PAYMENT</code> header it answers 402 with the challenge above; with a valid one it returns the deliverable, a <code>claimToken</code> and the escrow state.<span class="why">rate limited to 20 a minute</span></span><span class="t">x402</span></div>
+    <div class="row"><span class="k">POST /jobs/:id/approve</span><span class="v">Release escrow to the seller. Requires the <code>X-Job-Token</code> issued in the payment response.<span class="why">only the SHA-256 is stored, compared with timingSafeEqual</span></span><span class="t">buyer only</span></div>
     <div class="row"><span class="k">POST /jobs/:id/reject</span><span class="v">Refund escrow to the buyer. Same authority check.</span><span class="t">buyer only</span></div>
     <div class="row"><span class="k">GET /jobs/:id</span><span class="v">One job and its evidence trail, read back from the consensus topic.</span><span class="t">open</span></div>
     <div class="row"><span class="k">GET /jobs</span><span class="v">Every job. The claim-token hash is stripped before it leaves the process.</span><span class="t">open</span></div>
-    <div class="row"><span class="k">GET /health</span><span class="v">Which tier each subsystem is running on, and whether any of them is degraded.</span><span class="t">open</span></div>
+    <div class="row"><span class="k">GET /health</span><span class="v">Which tier each subsystem is on, and whether any is degraded.</span><span class="t">open</span></div>
   </div>
+</div>
 
-  <h2>See the challenge yourself</h2>
+<section class="page doc" style="padding-top:0">
+  <h2>See it yourself</h2>
   <p>No key, no account, nothing to install:</p>
   <pre class="code">curl -s -X POST https://heldprotocol.xyz/work \
   -H 'content-type: application/json' \

@@ -34,40 +34,41 @@
   <span class="where">hedera testnet &middot; escrow <b id="escrow">&hellip;</b></span>
 </nav>
 
-<section class="page">
+<section class="page" style="padding-bottom:0">
   <h1>Do not take our word for it.</h1>
   <p class="standfirst">Everything below is fetched from Hedera's public mirror node by your own
-    browser, right now. There is no Held server between you and the ledger, and nothing on this
-    page is a screenshot. If our service were switched off this page would still work.</p>
-
+    browser, right now. There is no Held server between you and the ledger, and nothing here is a
+    screenshot. If this service were switched off, this page would still work.</p>
   <div id="degraded" hidden></div>
+</section>
 
-  <h2 class="lab">The escrow account</h2>
-  <p class="standfirst" style="margin-bottom:18px">This is the account the 402 quote names in
-    <code>payTo</code>. Payments land here instead of the seller's account, which is the whole
-    mechanism.</p>
-  <div class="stat">
-    <div class="big"><span id="bal">&hellip;</span> <span class="u">HBAR</span></div>
-    <div class="sub">held right now in <a class="ext" id="escLink" href="#">the escrow account</a></div>
+<div class="band tight">
+  <div class="hero-figure">
+    <div class="big"><span id="bal">&hellip;</span><span class="u">HBAR</span></div>
+    <p class="side"><span class="live-dot"></span>held right now in
+      <a class="ext" id="escLink" href="#">the escrow account</a>. This is the account the 402 quote
+      names in <code>payTo</code>, instead of the seller's. That substitution is the entire product.</p>
   </div>
+  <div class="railrule"></div>
+  <div class="strip" id="counts"></div>
+</div>
 
-  <h2 class="lab" style="margin-top:46px">Money moving through it</h2>
-  <p class="standfirst" style="margin-bottom:14px">The most recent transfers touching escrow.
-    A positive figure is a buyer paying in; a negative one is a release to the seller or a refund
-    to the buyer. Every row links to the transaction on HashScan.</p>
+<section class="page" style="padding-top:0">
+  <h2 class="lab">Money moving through it</h2>
+  <p class="standfirst" style="margin-bottom:14px">The most recent transfers touching escrow. A
+    positive figure is a buyer paying in; a negative one is a release to the seller or a refund to
+    the buyer. Every row opens on HashScan.</p>
   <div class="rows" id="txs"><p class="loading">Reading the mirror node&hellip;</p></div>
 
   <h2 class="lab" style="margin-top:46px">The consensus log</h2>
   <p class="standfirst" style="margin-bottom:14px">Every state change writes a line to a Hedera
-    Consensus Service topic as it happens. These are those lines, decoded from the topic, newest
-    first. They are written by the service but ordered and timestamped by the network, so the
-    sequence is not ours to edit after the fact.</p>
-  <div class="rows" id="log"><p class="loading">Reading the topic&hellip;</p></div>
+    Consensus Service topic as it happens, grouped below by the job it belongs to. The service
+    writes them; the network orders and timestamps them, so the sequence is not ours to edit
+    afterwards.</p>
+  <div id="log"><p class="loading">Reading the topic&hellip;</p></div>
 
-  <p class="standfirst" style="margin-top:34px">
-    Topic <b id="topId" class="m">&hellip;</b> &middot;
-    <a class="ext" id="topLink" href="#">open it on HashScan</a>
-  </p>
+  <p class="standfirst" style="margin-top:30px">Topic <b id="topId" class="m">&hellip;</b> &middot;
+    <a class="ext" id="topLink" href="#">open it on HashScan</a></p>
 </section>
 
 <footer>

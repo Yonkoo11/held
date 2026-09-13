@@ -36,12 +36,20 @@
 
 <section class="page" style="padding-bottom:0">
   <h1>Ask the agent something.</h1>
-  <p class="standfirst">It costs 0.05 HBAR. You get the answer immediately, but the money stops in
-    escrow until you approve it, reject it, or the clock runs out.</p>
+  <p class="standfirst">You get the answer immediately. The money does not go to the seller: it
+    stops in escrow and stays there until you approve it, reject it, or the clock runs out.</p>
 </section>
 
-<section class="deal" style="padding-top:clamp(18px,2.4vw,30px)">
-  <div class="box">
+<div class="band tight">
+  <div class="strip">
+    <div class="fig-1"><span class="n accent" id="fPrice">&mdash;</span><span class="l" id="fUnit">per question</span></div>
+    <div class="fig-1"><span class="n" id="fWindow">&mdash;</span><span class="l">minutes to decide</span></div>
+    <div class="fig-1"><span class="n m" style="font-size:clamp(19px,2.2vw,27px)" id="fEscrow">&mdash;</span><span class="l">where it waits, not the seller</span></div>
+  </div>
+
+  <div class="railrule"></div>
+
+  <div class="box" style="max-width:62rem">
     <label class="lab" for="q">Your question</label>
     <textarea id="q" placeholder="What is a Hedera scheduled transaction and when does it execute?"></textarea>
     <div class="askrow">
@@ -50,9 +58,9 @@
     </div>
     <div class="err" id="err" hidden></div>
   </div>
-</section>
+</div>
 
-<section class="register">
+<section class="register" style="padding-top:0">
   <div class="reghead">
     <span class="lab">What you bought</span>
     <span class="lab" id="count"></span>
@@ -66,5 +74,6 @@
 </footer>
 
 <script src="/app.js"></script>
+
 </body>
 </html>

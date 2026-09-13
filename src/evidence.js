@@ -82,11 +82,16 @@ class HcsEvidence {
     return e;
   }
   async read(jobId) {
-    const r = await fetch(`${MIRROR_NODE}/api/v1/topics/${this.topicId}/messages?limit=100&order=asc`);
+    // Newest first, then reversed for display. It used to ask for `order=asc`, which reads the
+    // FIRST hundred messages the topic ever received: fine on day one, and silently wrong from
+    // message 101 onward. Every job bought after that returned an empty evidence trail while the
+    // lines sat on the topic the whole time. Nothing errored, which is why it survived a week.
+    const r = await fetch(`${MIRROR_NODE}/api/v1/topics/${this.topicId}/messages?limit=100&order=desc`);
     const d = await r.json();
     return (d.messages || [])
       .map((m) => { try { return JSON.parse(Buffer.from(m.message, 'base64').toString()); } catch { return null; } })
-      .filter(Boolean).filter((e) => !jobId || e.jobId === jobId);
+      .filter(Boolean).filter((e) => !jobId || e.jobId === jobId)
+      .reverse();
   }
   publicUrl() { return this.topicId ? `https://hashscan.io/testnet/topic/${this.topicId}` : null; }
 }

@@ -62,6 +62,11 @@ async function loadHealth() {
   set('escrow2', h.escrow);
   set('price', h.price);
   set('unit', h.asset.symbol);
+  // /ask leads with three figures rather than a form. Same /health call, no extra request.
+  set('fPrice', h.price);
+  set('fUnit', `${h.asset.symbol} per question`);
+  set('fWindow', h.reviewMinutes);
+  set('fEscrow', h.escrow);
   set('caveat', live
     ? `${h.price} ${h.asset.symbol} a question, settled on Hedera testnet. Real transactions on a public network, paid with test funds.`
     : `${h.price} ${h.asset.symbol} a question. Running on the local stand-in, so none of this reaches Hedera.`);

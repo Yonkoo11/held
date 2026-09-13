@@ -58,7 +58,7 @@ async function paintAccount(escrow) {
 
 async function paintTransactions(escrow) {
   const node = $('txs');
-  const d = await mirror(`/api/v1/transactions?account.id=${escrow}&limit=14&order=desc`);
+  const d = await mirror(`/api/v1/transactions?account.id=${escrow}&limit=9&order=desc`);
   clear(node);
   const rows = (d.transactions || []).filter((t) => t.name === 'CRYPTOTRANSFER');
   if (!rows.length) {
@@ -85,33 +85,61 @@ async function paintTransactions(escrow) {
   }
 }
 
+/* Sixteen loose rows read as noise. A job's lifecycle is four lines and belongs together, so the
+   log groups by job: you see how many jobs completed and what each one did, not a wall of events. */
 async function paintLog(topicId) {
   const node = $('log');
   set('topId', topicId);
   $('topLink').href = `${SCAN}/topic/${topicId}`;
-  const d = await mirror(`/api/v1/topics/${topicId}/messages?limit=16&order=desc`);
+  const d = await mirror(`/api/v1/topics/${topicId}/messages?limit=60&order=desc`);
   clear(node);
   const msgs = d.messages || [];
-  if (!msgs.length) {
-    node.appendChild(el('p', { className: 'loading' }, ['Nothing on the topic yet.']));
-    return;
-  }
+  if (!msgs.length) { node.appendChild(el('p', { className: 'loading' }, ['Nothing on the topic yet.'])); return; }
+
+  const byJob = new Map();
   for (const m of msgs) {
-    let ev;
-    try { ev = JSON.parse(atob(m.message)); } catch { continue; }
-    const d0 = when(m.consensus_timestamp);
-    node.appendChild(el('div', { className: 'row' }, [
-      el('span', { className: 'k' }, [`#${m.sequence_number}  ${ev.type}`]),
-      el('span', { className: 'v' }, [
-        MEANING[ev.type] || ev.type,
-        el('span', { className: 'why' }, [
-          'job ',
-          el('a', { className: 'ext', href: `/job/${ev.jobId}` }, [String(ev.jobId).slice(0, 8)]),
-          ev.degraded ? ' · recorded on a stand-in tier, not Hedera' : '',
-        ]),
+    let ev; try { ev = JSON.parse(atob(m.message)); } catch { continue; }
+    if (!byJob.has(ev.jobId)) byJob.set(ev.jobId, { id: ev.jobId, at: when(m.consensus_timestamp), steps: [], seq: m.sequence_number });
+    const g = byJob.get(ev.jobId);
+    g.steps.unshift({ type: ev.type, degraded: ev.degraded });
+    if (when(m.consensus_timestamp) > g.at) g.at = when(m.consensus_timestamp);
+  }
+
+  let shown = 0;
+  const outcome = { released: 0, refunded: 0, open: 0 };
+  for (const g of byJob.values()) {
+    const last = g.steps[g.steps.length - 1];
+    if (last && last.type === 'released') outcome.released++;
+    else if (last && last.type === 'refunded') outcome.refunded++;
+    else outcome.open++;
+    if (shown++ >= 8) continue;
+    node.appendChild(el('div', { className: 'jobgroup' }, [
+      el('div', { className: 'h' }, [
+        'job ',
+        el('a', { href: `/job/${g.id}` }, [String(g.id).slice(0, 8)]),
+        el('span', { className: 'ago' }, [ago(g.at)]),
       ]),
-      el('span', { className: 't' }, [ago(d0)]),
+      el('div', { className: 'steps' }, g.steps.map((st) =>
+        el('span', { className: `step ${st.type}` }, [el('i', {}, []), MEANING[st.type] || st.type]))),
     ]));
+  }
+
+  // The strip in the hero band: scale contrast, and every figure is counted from the topic itself.
+  const strip = $('counts');
+  if (strip) {
+    clear(strip);
+    const figs = [
+      [byJob.size, 'jobs on this topic', false],
+      [outcome.released, 'ended with the seller paid', true],
+      [outcome.refunded, 'ended with the buyer refunded', false],
+      [msgs.length, 'consensus messages read', false],
+    ];
+    for (const [n, label, accent] of figs) {
+      strip.appendChild(el('div', { className: 'fig-1' }, [
+        el('span', { className: `n${accent ? ' accent' : ''}` }, [String(n)]),
+        el('span', { className: 'l' }, [label]),
+      ]));
+    }
   }
 }
 

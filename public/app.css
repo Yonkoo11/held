@@ -521,3 +521,160 @@
   }
   .inv .broke b { font-weight: 500; color: var(--back); }
   .inv .broke em { font-style: italic; }
+
+  /* ══ LIVENESS ════════════════════════════════════════════════════════════
+     Resolving a real conflict in the brief. The workflow calls liveness mandatory
+     and names gradient meshes, accent glow and glassmorphism; the taste corpus caps
+     the decoration budget at zero ambient glows and zero texture overlays. Bolting
+     glowing blobs onto a paper world would satisfy the first rule by violating the
+     second, and would look like every other AI page.
+
+     For THIS world, alive means: the ground has grain and strata rather than being
+     one flat field, scale contrasts instead of uniform density, the rail recurs as
+     structure, and the things that move are real values rather than ornament. */
+
+  /* One texture overlay, fixed so it never scrolls with content (forbidden-patterns
+     bans grain on a scrolling container). Paper at 0.024 reads as fibre, not noise. */
+  body::before {
+    content: ''; position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    opacity: 0.024;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='3'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+  /* A single warm pool behind the top of the page. One, not three, and it sits under
+     the fold line rather than floating behind the headline as a decorative blob. */
+  body::after {
+    content: ''; position: fixed; inset: 0 0 auto; height: 62vh; z-index: 0;
+    pointer-events: none;
+    background: radial-gradient(120% 78% at 50% -14%, rgba(176, 67, 28, 0.055), transparent 68%);
+  }
+  nav, header, section, footer, main { position: relative; z-index: 1; }
+
+  /* ── strata ──────────────────────────────────────────────────────────────
+     Full-bleed bands on a sunk ground. This is what stops a long page reading as
+     one undifferentiated column: the eye gets a floor change instead of another
+     paragraph. Bands break out of the page gutter deliberately. */
+  .band {
+    position: relative; z-index: 1;
+    margin: clamp(46px, 5.5vw, 78px) 0;
+    padding: clamp(38px, 4.6vw, 62px) var(--gut);
+    background: var(--paper-sunk);
+    box-shadow: inset 0 1px 0 var(--rule), inset 0 -1px 0 var(--rule);
+  }
+  .band > * { max-width: 68rem; }
+  .band.tight { margin: 0 0 clamp(34px, 4vw, 52px); }
+
+  /* ── the rail, recurring ─────────────────────────────────────────────────
+     The mark is a rail with one block arrested past the midpoint. Repeating that
+     object as a section divider is what makes the logo read as this product's
+     rather than a shape that happens to sit in the corner. */
+  .railrule {
+    position: relative; height: 2px; margin: clamp(42px, 5vw, 70px) 0;
+    background: var(--rule-strong);
+    width: 100vw; left: 50%; transform: translateX(-50vw);
+  }
+  .railrule::after {
+    content: ''; position: absolute; top: -9px; left: 64%;
+    width: 11px; height: 20px; border-radius: 3px; background: var(--accent);
+  }
+
+  /* ── scale contrast ──────────────────────────────────────────────────────
+     A wall of 14px text is the thing that made these pages read as documents. Every
+     long surface now gets at least one figure set in display type. */
+  .figures { display: flex; gap: clamp(26px, 4vw, 64px); flex-wrap: wrap; align-items: flex-end; }
+  .fig-1 { min-width: 0; }
+  .fig-1 .n {
+    font: 400 clamp(34px, 4.6vw, 58px)/0.98 var(--serif); letter-spacing: -0.035em;
+    font-variant-numeric: tabular-nums; display: block;
+  }
+  .fig-1 .n.accent { color: var(--accent); }
+  .fig-1 .l {
+    display: block; margin-top: 8px;
+    font: 500 12px/1.4 var(--mono); letter-spacing: .14em; text-transform: uppercase;
+    color: var(--ink-3);
+  }
+
+  /* a value that changes without anyone touching it, on every surface that has one */
+  @keyframes pulse-dot { 0%, 100% { opacity: .28; } 50% { opacity: 1; } }
+  .live-dot {
+    display: inline-block; width: 6px; height: 6px; border-radius: 50%;
+    background: var(--accent); margin-right: 7px; vertical-align: 1px;
+    animation: pulse-dot 2.4s var(--ease) infinite;
+  }
+  @media (prefers-reduced-motion: reduce) { .live-dot { animation: none; opacity: .8; } }
+
+  /* ── /build: the two-pane reference ──────────────────────────────────────
+     docs.stripe.com/api puts the complete real object beside the prose, not under
+     it, and pins it while you read. That was in the research and then did not get
+     built. Below 1000px it stacks, because a code pane in a phone-width column is
+     worse than no pane at all. */
+  .split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: clamp(26px, 3.4vw, 58px); align-items: start; }
+  .split > .prose { min-width: 0; }
+  .split > .aside { min-width: 0; position: sticky; top: 26px; }
+  @media (max-width: 1000px) {
+    .split { grid-template-columns: minmax(0, 1fr); }
+    .split > .aside { position: static; }
+  }
+  .split .prose > :first-child, .split .aside > :first-child { margin-top: 0; }
+
+  pre.code.dark {
+    background: #1b1813; color: #d8cfc2; box-shadow: var(--lift-2);
+    font-size: 12.4px; line-height: 1.62;
+  }
+  pre.code.dark b { color: #e2794d; font-weight: 500; }
+  pre.code.dark i { color: #7d746a; font-style: normal; }
+  .codehead {
+    display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
+    margin-bottom: 9px;
+    font: 500 12px/1.4 var(--mono); letter-spacing: .12em; text-transform: uppercase;
+    color: var(--ink-3);
+  }
+  .codehead .st { text-transform: none; letter-spacing: 0; color: var(--ink-4); font-weight: 400; }
+
+  /* ── /invariants: an index, then the wall ────────────────────────────────
+     Thirteen blocks of equal weight is a wall. The index gives the page a shape and
+     lets someone jump to the one they care about; the two failures get the accent
+     because they are the most credible thing here, not the least. */
+  .ix { display: grid; grid-template-columns: repeat(auto-fill, minmax(215px, 1fr)); gap: 3px 12px; margin: 0 0 6px; }
+  .ix a {
+    display: flex; gap: 9px; align-items: baseline; padding: 8px 10px; border-radius: var(--r-sm);
+    text-decoration: none; color: var(--ink-2); font: 400 13.5px/1.35 var(--sans);
+    transition: background-color 150ms var(--ease), color 150ms var(--ease);
+  }
+  .ix a span { font: 500 11.5px/1 var(--mono); letter-spacing: .08em; color: var(--accent); flex: none; padding-top: 2px; }
+  @media (hover: hover) { .ix a:hover { background: rgba(23,21,15,.045); color: var(--ink); } }
+  .ix a:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--accent-ring); }
+  .ix a.broke span { color: var(--back); }
+  .inv:target { background: rgba(176, 67, 28, 0.045); box-shadow: inset 3px 0 0 var(--accent); padding-left: 15px; }
+
+  /* ── /ledger + /proof: the figures strip ─────────────────────────────────  */
+  .strip { display: flex; gap: clamp(22px, 3.6vw, 58px); flex-wrap: wrap; align-items: flex-end; }
+
+  /* /proof: the balance sits in its own band with the rail passing through it,
+     so the page opens on a fact rather than on another paragraph. */
+  .hero-figure { display: flex; align-items: center; gap: clamp(20px, 3vw, 44px); flex-wrap: wrap; }
+  .hero-figure .big {
+    font: 400 clamp(46px, 7.4vw, 92px)/0.92 var(--serif); letter-spacing: -0.042em;
+    font-variant-numeric: tabular-nums;
+  }
+  .hero-figure .big .u { font-size: 0.3em; letter-spacing: 0.05em; color: var(--ink-3); margin-left: 6px; }
+  .hero-figure .side { font: 400 14px/1.65 var(--sans); color: var(--ink-2); max-width: 32ch; }
+
+  /* a job's four consensus lines belong together; sixteen loose rows read as noise */
+  .jobgroup { border-bottom: 1px solid var(--rule); padding: 15px 0; }
+  .jobgroup > .h {
+    display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-bottom: 9px;
+    font: 500 12px/1.4 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3);
+  }
+  .jobgroup > .h a { color: var(--accent); text-decoration: none; }
+  .jobgroup > .h .ago { text-transform: none; letter-spacing: 0; color: var(--ink-4); font-weight: 400; margin-left: auto; }
+  .steps { display: flex; flex-wrap: wrap; gap: 7px; }
+  .step {
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 6px 11px 6px 9px; border-radius: var(--r-full);
+    background: var(--surface); box-shadow: var(--lift-1);
+    font: 400 12.5px/1 var(--sans); color: var(--ink-2);
+  }
+  .step i { width: 5px; height: 5px; border-radius: 50%; background: var(--ink-4); flex: none; }
+  .step.paid i { background: var(--accent); }
+  .step.released i { background: var(--paid); }
+  .step.refunded i { background: var(--back); }

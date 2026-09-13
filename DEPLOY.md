@@ -49,12 +49,15 @@ domain; Namecheap's ALIAS record is their way of doing it and it is in the same 
 
 Propagation is usually minutes. Railway then issues the TLS certificate itself.
 
-**If the certificate sticks on "validating ownership":** Railway's own DNS check is lenient and
-reports PROPAGATED for any of its edge addresses, but the ACME challenge has to be answered by the
-exact edge the domain was registered against. Pointing at a different Railway edge therefore looks
-fine in the dashboard and never issues. The fix is to delete the custom domain and add it again,
-which mints a fresh target, and then point DNS at that new value. The targets above were minted on
-2026-09-13 for exactly that reason; the first pair wedged for forty minutes.
+**If the certificate sticks on "validating ownership":** on 2026-09-13 both domains sat in
+`CERTIFICATE_STATUS_TYPE_VALIDATING_OWNERSHIP` for forty minutes while Railway reported
+`DNS_RECORD_STATUS_PROPAGATED`. Checked and ruled out at the time: no CAA record on the zone, the
+`/.well-known/acme-challenge/` path reachable over plain HTTP rather than redirected, the edge
+routing the hostname (HTTP 301 to HTTPS rather than 404), and DNS resolving to the exact edge each
+domain had been registered against. **No cause was established on our side.** The remedy applied was
+to delete both custom domains and recreate them through the API, which mints fresh targets and a
+fresh certificate order; the values above are from that second attempt. If it wedges again, that is
+a Railway-side issue to raise with their support rather than something to keep re-pointing DNS at.
 
 ## Step 2 — the keys
 

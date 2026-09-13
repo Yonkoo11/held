@@ -182,6 +182,21 @@ function setJobView(limit, filter) {
   loadJobs();
 }
 
+/* The wire is the home page's signature element and the only thing on it that moves. It reads
+   soonestDeadline, which used to be a side effect of rendering the job list. After the site was
+   split, / has no job list, so the wire sat dead at "nothing in flight yet" even while money was
+   genuinely in escrow. A page whose one live element is lying is worse than one with no live
+   element, so / now fetches the deadlines it needs and nothing else. */
+async function loadDeadlinesOnly() {
+  if ($('jobs') || !$('wire')) return;
+  try {
+    const list = await (await fetch('/jobs')).json();
+    const held = list.filter((j) => j.state === 'held').map((j) => j.deadline);
+    soonestDeadline = held.length ? Math.min(...held) : null;
+    paintWire();
+  } catch { /* the wire simply stays at rest; it never invents a clock */ }
+}
+
 async function loadJobs() {
   if (!$('jobs')) return;
   const list = await (await fetch('/jobs')).json();
@@ -266,8 +281,9 @@ setInterval(() => {
   if (soonestDeadline !== null && $('wclock')) set('wclock', countdown(soonestDeadline - Date.now()));
 }, 1000);
 if ($('jobs')) setInterval(loadJobs, 6000);
+else if ($('wire')) setInterval(loadDeadlinesOnly, 6000);
 
-loadHealth().then(() => { if ($('jobs')) loadJobs(); });
+loadHealth().then(() => { if ($('jobs')) loadJobs(); else loadDeadlinesOnly(); });
 
 
 /* Wayfinding. Without an active state a persistent nav is just a row of links. */

@@ -1,0 +1,43 @@
+# Every suite here runs with no secrets and no network beyond localhost, which is the only reason
+# this badge means anything. `prove-live` and `prove-contract` are deliberately absent: they spend
+# real testnet funds and need the operator key, so they stay manual and their output is committed
+# under evidence/ instead.
+name: tests
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  node:
+    name: node suites (40 cases)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci
+      - name: 7 Hedera transactions build offline
+        run: node scripts/dryrun-hedera.js
+      - name: key parsing
+        run: node scripts/test-keys.js
+      - name: worker tiers and bylines
+        run: node scripts/test-worker.js
+      - name: regression, against a server this spawns itself
+        run: node scripts/regression.js
+
+  contract:
+    name: HeldEscrow (19 cases)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive          # forge-std, pinned
+      - uses: foundry-rs/foundry-toolchain@v1
+      - name: forge test
+        run: forge test -vv
+        working-directory: contracts

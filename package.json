@@ -27,6 +27,8 @@
     "test": "node scripts/dryrun-hedera.js && node scripts/test-keys.js && node scripts/test-worker.js && node scripts/regression.js",
     "test:keys": "node scripts/test-keys.js",
     "test:worker": "node scripts/test-worker.js",
-    "design:check": "bash ~/System/scripts/ui-slop-check.sh ."
+    "design:check": "bash ~/System/scripts/ui-slop-check.sh .",
+    "prove:contract": "node --env-file-if-exists=.env --env-file-if-exists=\"$HOME/.outcomelock.env\" scripts/prove-contract.js",
+    "test:contract": "cd contracts && forge test"
   }
 }

@@ -100,6 +100,22 @@ All dated 2026-09-07 unless stated.
   future `setExpirationTime`, which was previously an open unknown. **It proves the client accepts
   the shape; it does NOT prove the network accepts it.**
 
+### Added 2026-09-13 (contract tier)
+
+- **The Hedera EVM JSON-RPC relay works.** `https://testnet.hashio.io/api` returns chainId `0x128`
+  (296) and a current block. This closes the "unprobed" unknown below. `forge` compiles and deploys
+  through it with `evm_version = "shanghai"`.
+- **The operator key is ECDSA_SECP256K1**, so it signs EVM transactions directly through ethers. No
+  separate EVM account has to be created. An ED25519 Hedera key could not have done this.
+- **Hedera's EVM uses two denominations and mixing them does not error.** The `value` field of a
+  transaction is **weibar** (18 decimals) and so is `eth_getBalance`, but `msg.value` and
+  `call{value:}` INSIDE the EVM are **tinybar** (8 decimals). Sending `parseEther(2)` makes the
+  contract see `2e8`. The first proof run refunded correctly and merely *printed* `0.0000000002
+  HBAR`; the split then reverted because a weibar argument was compared against a tinybar balance.
+  Money sent as `value` is weibar; any amount passed to a contract as an argument is tinybar.
+- **`HeldEscrow` is deployed at `0x75f1Eb3700aECc1429c8e99Ed124Af7E3Ec6ebB0`** on Hedera testnet,
+  with all four endings exercised on chain. See `evidence/CONTRACT.md`.
+
 ## Open Unknowns — DO NOT invent answers
 
 - Whether the **network** accepts a scheduled transaction with `waitForExpiry` and a future
@@ -107,8 +123,9 @@ All dated 2026-09-07 unless stated.
   complaint (`scripts/dryrun-hedera.js`) and the mirror node models both fields. What remains
   unproven is submission and execution, which needs credentials. **The auto-release depends on it.**
 - Whether HCS-14 agent identity has a usable SDK or is a spec only. Unprobed.
-- Whether the Hedera EVM (JSON-RPC relay) testnet endpoint is stable enough for contract deploys
-  this week. Unprobed.
+- ~~Whether the Hedera EVM (JSON-RPC relay) testnet endpoint is stable enough for contract
+  deploys.~~ **CLOSED 2026-09-13.** It is: the contract is deployed and all four endings ran
+  through it.
 - Whether node 20 is sufficient for `@x402/*` v2.25.0. The packages declare no `engines.node` at
   all, so nothing is promised either way. Install succeeded on node 20.19.5 (401 packages).
 

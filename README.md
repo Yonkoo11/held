@@ -100,6 +100,7 @@ shows, without the service being involved at all.
 | **Escrow account** | [`0.0.10495061`](https://hashscan.io/testnet/account/0.0.10495061) | The account `payTo` names |
 | **Evidence topic** | [`0.0.10495064`](https://hashscan.io/testnet/topic/0.0.10495064) | Append-only record of every state change |
 | **A deadline schedule** | [`0.0.10495601`](https://hashscan.io/testnet/schedule/0.0.10495601) | One armed auto-release |
+| **Escrow contract** | [`0x75f1Eb37…6ebB0`](https://hashscan.io/testnet/contract/0x75f1Eb3700aECc1429c8e99Ed124Af7E3Ec6ebB0) | Release enforced by code, with a permissionless deadline |
 
 ### What the runs have shown
 
@@ -114,6 +115,11 @@ shows, without the service being involved at all.
 - **13 of 13** tests pass, covering all three endings, the evidence trail, and an injected
   schedule-arming failure. `scripts/attack.js` fires five concurrent approvals at one job and
   exactly one is accepted.
+- **All four contract endings executed on Hedera's EVM**, including a partial split (1.25 to the
+  seller, 0.75 back to the buyer) and an expiry pushed by an account that was neither the buyer, nor
+  the seller, nor this service. The contract held **0.0 HBAR** afterwards, so nothing was stranded.
+  **19 of 19** contract tests pass, including a re-entrant seller that is paid exactly once and a
+  256-run fuzz proving a split always conserves the amount. See [`evidence/CONTRACT.md`](evidence/CONTRACT.md).
 - Two invariants were **broken and fixed during the build**, both visible on chain. Both are written
   up with their causes in [`evidence/INVARIANTS.md`](evidence/INVARIANTS.md) rather than quietly
   repaired.
@@ -121,19 +127,22 @@ shows, without the service being involved at all.
 These are single runs on a testnet, recorded because they happened. They do not establish uptime, an
 SLA, throughput, or behaviour under load, and none of that is claimed.
 
-### Current limits
+### Limitations, and what I did not claim
 
 - **Testnet only.** No mainnet writes, no real funds.
-- **The escrow is an account, not a contract.** Release is enforced by this service behaving
-  correctly, not by code on chain. The operator holds the key. A contract is the obvious next step
-  and is not built.
+- **The live default is still the account escrow, not the contract.** The contract exists, is
+  deployed, and every ending is proven on it (below), but the running service settles through the
+  Hedera account because that is what the recorded demo shows. Switching the default is a
+  deployment decision, not more building.
 - **The job register is per-deployment.** It lives on a mounted volume and starts empty when a new
   deployment does. The consensus topic is the durable record; the register is a convenience.
 - **`DEMO_BUY` spends the server's own funded account** so a visitor can try the flow without a
   wallet. It is rate limited and input capped, and it can be switched off, but a determined visitor
   can still drain that account. On testnet the fix is a refill.
-- **One agent, one price.** Flat 0.05 HBAR per question, no per-job quoting, and rejection is a full
-  refund with no partial release.
+- **Per-job pricing and partial release are off by default.** Both are built. `PRICING=perjob`
+  makes the 402 quote scale with the question and caps it; the contract's `settle` splits a job
+  between seller and buyer. The defaults stay flat and all-or-nothing so the recorded demo remains
+  accurate.
 - **The worker falls back.** If the model provider fails, output is produced by a deterministic
   stand-in, and every deliverable carries a byline naming which tier answered.
 
@@ -157,7 +166,9 @@ To run against real Hedera testnet, copy `.env.example` and fill it in, then:
 npm run go-live   # creates the escrow account, topic, and a funded buyer
 npm run seller
 npm run buyer ask "When does a Hedera scheduled transaction execute?"
-npm run prove     # replays all three endings and rewrites evidence/PROOF.md
+npm run prove           # replays all three endings and rewrites evidence/PROOF.md
+npm run test:contract   # 19 contract tests, local, no network
+npm run prove:contract  # deploys to Hedera testnet and runs all four endings on chain
 ```
 
 ## Repository layout
@@ -170,9 +181,13 @@ src/                  the service
   store.js            job state machine; transition() is the double-payout guard
   worker.js           the agent, with a tiered provider cascade
 public/               the site: seven pages, one stylesheet, one script, no build step
-scripts/              go-live, prove-live, the attack and regression suites
+contracts/
+  src/HeldEscrow.sol  escrow enforced by code: per-job amounts, partial release, permissionless expiry
+  test/               19 tests including re-entrancy and a conservation fuzz
+scripts/              go-live, prove-live, prove-contract, the attack and regression suites
 evidence/
   PROOF.md            transaction ids for all three endings, resolvable on HashScan
+  CONTRACT.md         the deployed escrow contract and its four on-chain endings
   INVARIANTS.md       13 properties, how each is enforced and tested, and the two that broke
 docs/                 architecture, deployment, access, and the demo script
 spec/                 the plan, build log, and design record written as it happened

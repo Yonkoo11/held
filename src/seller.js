@@ -16,6 +16,28 @@ import * as store from './store.js';
 
 const PORT = Number(process.env.PORT || 4021);
 const PRICE = Number(process.env.PRICE || process.env.PRICE_USDC || 0.05);
+
+/* Per-job pricing. Off by default, because the recorded demo and the submitted video show the flat
+   price and a quote that changed under a judge would be worse than one that is merely simple.
+   Set PRICING=perjob to turn it on.
+
+   A flat price is wrong in both directions: a one-line lookup subsidises a long research question,
+   and a long question is underpriced at the same rate. This charges for the work asked for, using
+   the only signal available before the work is done, and it is bounded at both ends so a quote can
+   never surprise anyone. The buyer sees the figure in the 402 before paying, as they always did. */
+const PRICING = (process.env.PRICING || 'flat').toLowerCase();
+const PRICE_MIN = Number(process.env.PRICE_MIN || PRICE);
+const PRICE_MAX = Number(process.env.PRICE_MAX || PRICE * 4);
+
+function quoteFor(question) {
+  if (PRICING !== 'perjob') return PRICE;
+  const chars = String(question || '').trim().length;
+  // One unit of price per 400 characters asked, starting at the floor.
+  const steps = Math.floor(chars / 400);
+  const raw = PRICE_MIN + steps * PRICE;
+  const capped = Math.min(PRICE_MAX, raw);
+  return Number(capped.toFixed(8));
+}
 const REVIEW_WINDOW_MS = Number(process.env.REVIEW_MINUTES || 10) * 60 * 1000;
 // How long past expiry we wait for Hedera's scheduled release before doing it ourselves.
 const SCHEDULE_GRACE_MS = Number(process.env.SCHEDULE_GRACE_SECONDS || 90) * 1000;
@@ -81,28 +103,28 @@ async function loadFacilitatorSupport(attempt = 1) {
   return hedera;
 }
 
-function requirements(resourceUrl) {
+function requirements(resourceUrl, price) {
   return {
     scheme: 'exact',
     network: HEDERA_CAIP2,
     asset: payAsset().id,
-    amount: toUnits(PRICE),
+    amount: toUnits(price),
     payTo: escrow,                       // <- escrow, not the seller. This is the whole product.
     maxTimeoutSeconds: 120,
     extra: feePayer ? { feePayer } : {},
   };
 }
 
-function paymentRequired(res, resourceUrl, error) {
+function paymentRequired(res, resourceUrl, price, error) {
   return res.status(402).json({
     x402Version: 2,
     error: error || 'payment required',
     resource: {
       url: resourceUrl,
-      description: `Research answer from an agent. ${PRICE} ${payAsset().symbol}, held in escrow until you approve it.`,
+      description: `Research answer from an agent. ${price} ${payAsset().symbol}, held in escrow until you approve it.`,
       mimeType: 'application/json',
     },
-    accepts: [requirements(resourceUrl)],
+    accepts: [requirements(resourceUrl, price)],
     extensions: {
       held: {
         escrow,
@@ -178,7 +200,8 @@ function tokenMatches(job, presented) {
 app.get('/health', (_req, res) => res.json({
   status: 'ok', escrow, feePayer,
   evidenceTopic, facilitator: FACILITATOR_URL,
-  price: PRICE, asset: payAsset(), agent: agentVersion(), tiers: tiers(),
+  price: PRICE, pricing: PRICING, priceRange: PRICING === 'perjob' ? [PRICE_MIN, PRICE_MAX] : null,
+  asset: payAsset(), agent: agentVersion(), tiers: tiers(),
   reviewMinutes: REVIEW_WINDOW_MS / 60000,
 }));
 
@@ -232,21 +255,23 @@ app.post('/work', rateLimit(20, 60000), async (req, res) => {
   }
 
   const header = req.get('X-PAYMENT');
-  if (!header) return paymentRequired(res, resourceUrl);
+  // The quote is for THIS question, so it is computed before the challenge is written.
+  const price = quoteFor(req.body?.question);
+  if (!header) return paymentRequired(res, resourceUrl, price);
 
   let paymentPayload;
   try {
     paymentPayload = JSON.parse(Buffer.from(header, 'base64').toString('utf8'));
   } catch {
-    return paymentRequired(res, resourceUrl, 'X-PAYMENT header is not base64 JSON');
+    return paymentRequired(res, resourceUrl, price, 'X-PAYMENT header is not base64 JSON');
   }
 
-  const paymentRequirements = requirements(resourceUrl);
+  const paymentRequirements = requirements(resourceUrl, price);
 
   // 1. Verify before doing any work.
   const verify = await facilitator('/verify', { x402Version: 2, paymentPayload, paymentRequirements });
   if (!verify.ok || !verify.json?.isValid) {
-    return paymentRequired(res, resourceUrl,
+    return paymentRequired(res, resourceUrl, price,
       verify.json?.invalidMessage || verify.json?.invalidReason || `verify failed (${verify.status})`);
   }
   const payer = verify.json.payer || paymentPayload?.payload?.payer || 'unknown';

@@ -5,12 +5,27 @@ how it is tested. Several are here because they were broken first and caught on 
 
 `npm test` and `npm run attack` exist to keep these true.
 
+**Two tiers enforce these, and they are not equally strong.** The service tier is what the live
+site runs: `payTo` points at the Hedera native escrow account `0.0.10495061`, and release is this
+server behaving correctly. The contract tier is `HeldEscrow`, deployed at
+[`0x75f1Eb37…`](https://hashscan.io/testnet/contract/0x75f1Eb3700aECc1429c8e99Ed124Af7E3Ec6ebB0),
+where I1, I4 and I5 hold whether or not this server behaves, and whether or not it exists at all.
+**The live x402 flow does not route through the contract** — no file under `src/` references it.
+Where a contract clause appears below, it is a stronger proof of the same property, not a
+description of what the demo does.
+
 ---
 
 ## Money
 
-### I1 — Escrow pays out at most once per job
-Exactly one of: released to the seller, or refunded to the buyer. Never both, never twice.
+### I1 — Escrow pays out a job's full amount, once
+A held job settles exactly once, and the money that leaves equals the money that went in. Nothing
+is stranded and nothing is conjured.
+
+The service tier only ever pays one side: released to the seller, or refunded to the buyer. The
+contract tier adds `settle`, which splits between both — so "never both" was the old wording, and
+it stopped being true the moment partial release existed. The property that survives both tiers is
+conservation plus finality, stated above.
 
 - **Enforced by** `store.transition()` — a synchronous compare-and-set that claims a job into
   `settling` *before* any transfer. It contains no `await`, so two requests cannot interleave.
@@ -18,6 +33,15 @@ Exactly one of: released to the seller, or refunded to the buyer. Never both, ne
   than performing its own transfer when one is armed.
 - **Tested by** `attack.js` (five concurrent approvals → exactly one accepted) and by per-job
   attribution of every escrow debit on the mirror node.
+- **Enforced in the contract by** `_take()`, which flips the job to `Settled` and zeroes the stored
+  amount *before* either transfer, so a re-entering seller finds nothing left to claim.
+- **Tested in the contract by** `test_cannot_settle_twice`, `test_approve_then_expire_cannot_double_pay`
+  and `test_reentrant_seller_cannot_take_twice`, which re-enters `expire` from the seller's
+  `receive()` and asserts payment happened exactly once.
+- **Conservation tested by** `testFuzz_settle_conserves_the_amount` (256 runs: any split of any
+  amount leaves the contract holding nothing) and `test_settle_cannot_exceed_the_amount`.
+- **Proven on chain:** a second `approve` on an already-settled job reverted, and the contract held
+  0.0 HBAR after all four endings. See `evidence/CONTRACT.md`.
 - **Broken on 2026-09-12.** The sweeper released at the deadline *and* the scheduled transaction
   executed: two 0.05 HBAR debits for one job, 13 seconds apart, both visible on chain. The
   single-threaded local tier hid it — the check and the write sat in one synchronous block there,
@@ -48,6 +72,13 @@ An unresponsive buyer cannot trap a seller's money. The review window always end
   its expiry and `waitForExpiry(true)`.
 - **Tested by** `regression.js` case 3 and `prove-live.js` case 3, which waits without intervening
   and confirms the release came from the schedule.
+- **Enforced in the contract by** `expire()`, which is permissionless after the deadline: no owner,
+  no operator, no privileged key. Anyone can close a job the buyer abandoned.
+- **Tested in the contract by** `test_anyone_can_expire_after_the_deadline` (called by a stranger)
+  and `test_expire_is_too_early_before_the_deadline`.
+- **Proven on chain:** account `0x8656739b…` — neither buyer, nor seller, nor this service — pushed
+  2.0 HBAR to the seller at the deadline
+  ([`0x3880e3fa…`](https://hashscan.io/testnet/transaction/0x3880e3fa925494285934ec707cd198014d0473ca91dbf61198e636eea8192184)).
 
 ---
 
@@ -60,6 +91,11 @@ Approve and reject are restricted to whoever made the payment.
   comparison is `timingSafeEqual`.
 - **Tested by** `attack.js` cases 1 and 2 — no token and wrong token both refused, right token
   accepted.
+- **Enforced in the contract by** a `msg.sender == j.buyer` check on `approve`, `reject` and
+  `settle`. The buyer is the address that funded the job, so authority is a ledger fact rather
+  than a token this server chose to honour.
+- **Tested in the contract by** `test_stranger_cannot_approve`, `test_stranger_cannot_settle` and
+  `test_seller_cannot_approve_its_own_job`.
 - **Broken until 2026-09-12.** There was no authorisation at all. Job ids are listed publicly on
   `/jobs`, so a job id was sufficient to move someone else's money. A stranger released a job in
   testing and received `200 OK`.

@@ -47,7 +47,7 @@ Requirement checklist, honestly marked:
 | Host a live x402-gated service on Hedera testnet/mainnet via Blocky402 | **MET** — live at <https://heldprotocol.xyz> (also <https://held-production-0ce9.up.railway.app>), escrow `0.0.10495061`, facilitator `api.testnet.blocky402.com`, fee payer `0.0.7162784` |
 | Build a platform/agent consuming that service with >= 1 real paid request | **MET** — three real paid requests on 2026-09-12, all confirmed by the mirror node. See `PROOF.md` |
 | Public GitHub repo with README covering setup, architecture, payment flow | READY — README.md covers all three |
-| Demo video showing paid request execution | Picture cut and rendered at **2:13**, 1920x1080. `<<FILL: narration not recorded>>` |
+| Demo video showing paid request execution | Picture cut and rendered at **2:13**, 1920x1080. Silent by decision, on-screen titles instead of narration. Hosted as a GitHub release asset. |
 
 Extra-points items actually implemented **and exercised on testnet**: pay-per-call metering, HCS
 audit trail (topic `0.0.10495064`, 179 messages at the time of writing), scheduled transactions for the auto-release
@@ -114,9 +114,9 @@ machine ran out of credit mid-run, the worker failed over, and the demo continue
 
 ## Links
 
-- Source: `<<FILL: public GitHub URL>>`
-- Live service: `<<FILL: public URL — note it is a tunnel and may be down after the event>>`
-- Demo video: `<<FILL>>`
+- Source: https://github.com/Yonkoo11/held
+- Live service: https://heldprotocol.xyz (Railway: https://held-production-0ce9.up.railway.app)
+- Demo video: https://github.com/Yonkoo11/held/releases/download/v1.0.0/held-demo.mp4 (2:14, silent with on-screen titles)
 - Escrow account on HashScan: https://hashscan.io/testnet/account/0.0.10495061
 - Evidence topic on HashScan: https://hashscan.io/testnet/topic/0.0.10495064
 - An auto-release schedule: https://hashscan.io/testnet/schedule/0.0.10495601

@@ -160,3 +160,43 @@ Pricing is a flat 0.05 HBAR per question. A buyer approving work should be able 
 Right now a rejection is a full refund and there is nothing in between. Real disputes are usually partial, so a split release, where the buyer releases part and refunds the rest, is the obvious next ending to add.
 
 The agent version id is already a hash of the prompt, the model and the source. Publishing those hashes to the same consensus topic would let a buyer check that the build which answered them is the build the seller advertised, rather than taking the byline on trust.
+
+
+================================================================================
+TECH STACK PAGE, FIELD BY FIELD
+================================================================================
+Ethereum developer tools
+  None apply. This is Hedera native, not EVM. If the list has no None option,
+  leave it empty; if it refuses to save empty, pick Other.
+
+Blockchain networks
+  Hedera
+
+Programming languages
+  JavaScript
+
+Web frameworks
+  Express
+  (the front end is hand written HTML and CSS, no framework)
+
+Databases
+  None. Job state is a flat JSON file on a mounted volume, deliberately, so it
+  can be read during a demo. If the list has no None option, leave it empty.
+
+Design tools
+  None. The interface was designed in code, not in a design tool.
+
+Other technologies, type each and press enter
+x402
+Blocky402
+Hedera Consensus Service
+Hedera Scheduled Transactions
+@hiero-ledger/sdk
+Hedera Mirror Node REST API
+Google Gemini
+Remotion
+Puppeteer
+ffmpeg
+
+Describe how AI tools were used
+Claude Code was the implementer and I directed it. It wrote most of the code in this repository; I decided what to build, which tracks to enter, what to cut and what was not good enough, and the record of those decisions is committed under spec/ rather than just asserted. Two examples of what that division actually produced: a review I asked for found an authorisation hole on approve and reject plus a double payout, both real and both visible on chain, and neither caught by a passing test. A design pass I rejected as generic was rebuilt from three rendered directions with the reasoning written down. AI-USE.md in the repo names every intervention and what changed as a result. The narration in the demo video is my own voice, as the rules require.

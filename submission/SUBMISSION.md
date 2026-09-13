@@ -44,7 +44,7 @@ Requirement checklist, honestly marked:
 
 | requirement | status |
 |---|---|
-| Host a live x402-gated service on Hedera testnet/mainnet via Blocky402 | **MET** — live at <https://held-production-0ce9.up.railway.app> (and `heldprotocol.xyz` once its certificate lands), escrow `0.0.10495061`, facilitator `api.testnet.blocky402.com`, fee payer `0.0.7162784` |
+| Host a live x402-gated service on Hedera testnet/mainnet via Blocky402 | **MET** — live at <https://heldprotocol.xyz> (also <https://held-production-0ce9.up.railway.app>), escrow `0.0.10495061`, facilitator `api.testnet.blocky402.com`, fee payer `0.0.7162784` |
 | Build a platform/agent consuming that service with >= 1 real paid request | **MET** — three real paid requests on 2026-09-12, all confirmed by the mirror node. See `PROOF.md` |
 | Public GitHub repo with README covering setup, architecture, payment flow | READY — README.md covers all three |
 | Demo video showing paid request execution | Picture cut and rendered at **2:13**, 1920x1080. `<<FILL: narration not recorded>>` |

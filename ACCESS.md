@@ -13,11 +13,12 @@ tier on every receipt it writes. A demo on the bottom tier is still a real demo.
 
 - [ ] Hedera testnet account + ED25519 key — needed for: HCS evidence topic, scheduled release transaction, EVM escrow deploy — how: https://portal.hedera.com/dashboard (email signup, testnet HBAR auto-funded) — cost: free — eta: 10 min — fallback: local anvil EVM + a file-backed append-only log with the same interface; every receipt and the UI banner read `a local simulation standing in for Hedera testnet`. Demo runs end to end, but the Hedera track cannot be entered on this tier.
 - [x] Blocky402 facilitator — **PROBED 2026-09-07: no account and no API key needed.** The site states "Testnet MVP Ready - Open Access, No API Key Required", and it is MIT-licensed and self-hostable (`blockydevs/blocky402`). Packages `@x402/core`, `@x402/fetch`, `@x402/hedera` all resolve on npm at v2.25.0, published 2026-09-03/04. — fallback: self-host the same MIT facilitator locally, or the reference PoC at github.com/hedera-dev/x402-inference-pay-per-request-poc; identical flow, still Hedera.
-- [x] **Domain: `heldprotocol.xyz`, bought 2026-09-12. Deployed 2026-09-12, waiting on DNS.**
-      The service runs on Railway and is live at <https://held-production-0ce9.up.railway.app>.
-      Both `heldprotocol.xyz` and `www` are registered on the service; the four Namecheap records
-      (two routing, two TXT ownership proofs, which is the part that was missing) and the
-      key-loading command are in [`DEPLOY.md`](DEPLOY.md). Option (b) below was taken, with
+- [x] **Domain: `heldprotocol.xyz`, bought 2026-09-12. Live over HTTPS 2026-09-13 12:25 WAT.**
+      Both <https://heldprotocol.xyz> and <https://www.heldprotocol.xyz> serve the real service with
+      valid certificates; plain HTTP redirects to HTTPS. It runs on Railway and is also reachable at
+      <https://held-production-0ce9.up.railway.app>. The four Namecheap records (two routing, two
+      TXT ownership proofs, which were the part missing for a day) and the key-loading command are
+      in [`DEPLOY.md`](DEPLOY.md). Option (b) below was taken, with
       the key-custody tradeoff stated there and in the README's honest status.
       **Superseded detail, kept for the record:** at the time of writing it was **not pointing
       anywhere** — as of this line it has no nameservers and no A record, so it resolves to nothing.

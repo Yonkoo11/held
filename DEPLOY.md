@@ -1,11 +1,15 @@
 # Deploying Held to heldprotocol.xyz
 
-The service is already deployed and running. Two things are left, and both need you: the DNS
-records, and the Hedera keys. Neither can be done from this side.
+**Done. Live over HTTPS at <https://heldprotocol.xyz> since 2026-09-13 12:25 WAT**, with
+<https://www.heldprotocol.xyz> alongside it and plain HTTP redirecting to HTTPS. The Railway
+address <https://held-production-0ce9.up.railway.app> still works and points at the same service.
 
-**Live now:** <https://held-production-0ce9.up.railway.app>
-It is serving the real page and taking real requests, but on the local stand-in tier, because no
-keys are set yet. It says so on itself rather than pretending.
+`/health` on the live domain reports settlement, evidence and worker all on their real tier:
+Hedera testnet with HBAR moving through escrow `0.0.10495061`, a Hedera Consensus Service topic for
+the evidence trail, and Gemini behind the worker. Nothing is standing in.
+
+The rest of this file is the record of how it got there, kept because the certificate took a day
+longer than it should have and the reason is worth not repeating.
 
 ## What is already done
 

@@ -54,25 +54,33 @@ export type Scene =
 
 const clipFrames = (segments: Segment[]) => segments.reduce((a, s) => a + sec(s.to - s.from), 0);
 
-// Take 1: the box comes into view, the question is typed, Pay and ask, then the wait.
+// Take 1 (re-filmed 2026-09-13 against the rebuilt site). The buy lives on /ask now and the wire
+// on /, so the take navigates between them; the marks below are measured, never guessed.
 //
-// The wait is real and it is long: x402 verification, the agent actually thinking, then settlement
-// landing on Hedera. On this take that was 44 seconds, and ETHGlobal's own guidance is to cut
-// unnecessary waiting rather than sit in it. So the button is shown changing to "Settling on
-// Hedera", the dead middle is cut, and we come back for the last few seconds before the row lands.
-// Nothing is sped up; a chunk of stillness is removed.
-const paySeg: Segment[] = [
-  { from: M1.typing - 0.6, to: M1.pay + 6.5 },
-  { from: M1.held - 9, to: M1.held + 1.2 },
-];
-// Take 1: the row with its clock, the live wire, back to the row.
-const rowSeg: Segment[] = [{ from: M1.held + 1.2, to: M1.approve - 0.2 }];
-// Take 1: approve, RELEASED, the transaction id.
-const approveSeg: Segment[] = [{ from: M1.approve - 0.2, to: M1.end }];
+// The old edit cut a hole in the middle because settlement took 44 seconds and ETHGlobal's guidance
+// is to cut waiting rather than sit in it. On this take the same wait is 9 seconds, so there is no
+// dead time left to remove and the three scenes are one contiguous run. What is NOT free to change
+// is their length: the narration is recorded per scene against fixed durations, so these segments
+// are anchored to the END of the recording and sized to the exact figures the old edit produced
+// (21.51s, 16.04s, 11.22s). Re-film and the numbers move; the durations must not.
+// The end mark is taken when the script stops, a hair after the last frame ffmpeg wrote. Reading
+// right up to it renders a black tail, so back off 50ms. The scene lengths are unaffected.
+const T1_END = M1.end - 0.05;
+const PAY_LEN = 21.51, ROW_LEN = 16.04, APPROVE_LEN = 11.22;
+const T1_START = +(T1_END - (PAY_LEN + ROW_LEN + APPROVE_LEN)).toFixed(2);
+
+const paySeg: Segment[] = [{ from: T1_START, to: +(T1_START + PAY_LEN).toFixed(2) }];
+const rowSeg: Segment[] = [{ from: paySeg[0].to, to: +(paySeg[0].to + ROW_LEN).toFixed(2) }];
+const approveSeg: Segment[] = [{ from: rowSeg[0].to, to: +(rowSeg[0].to + APPROVE_LEN).toFixed(2) }];
+
 // Take 2: the last nine seconds of the countdown through "releasing", then a cut to the flip.
+// Take 2 (re-filmed 2026-09-13). Twelve seconds of the countdown running out, then eight of the
+// flip. The tail sits at released-2.1 rather than released-1.5 because released+6.5 would have read
+// 0.5s past the end of this recording, and a clip that runs off the end of its source renders black.
+// Lengths are unchanged at 12s + 8s, because the narration is cut to 20s.
 const deadlineSeg: Segment[] = [
   { from: M2.zero - 9, to: M2.zero + 3 },
-  { from: M2.released - 1.5, to: M2.released + 6.5 },
+  { from: M2.released - 2.1, to: M2.released + 5.9 },
 ];
 
 export const SCENES: readonly Scene[] = [
@@ -110,12 +118,14 @@ export const SCENES: readonly Scene[] = [
   },
   {
     key: "row", kind: "clip", frames: clipFrames(rowSeg), step: "4 of 7 · held", file: "video/take1.mp4",
-    segments: rowSeg,
+    segments: rowSeg, cropTop: HEAD, // this scene visits / , whose own nav would double the header band
     titles: [
       { at: 0, text: "The answer arrives at once. The money does not." },
       { at: 4, text: "That clock is a Hedera scheduled transaction." },
       { at: M1.wire - rowSeg[0].from, text: "The wire up top shows the same clock." },
-      { at: M1.row2 - rowSeg[0].from, text: "If I do nothing, it still pays the seller." },
+      // row2 lands in the approve scene on the new take, so this is timed against the scene
+      // itself: it reads over the wire, which is exactly what the line is about.
+      { at: 12.2, text: "If I do nothing, it still pays the seller." },
     ],
   },
   {

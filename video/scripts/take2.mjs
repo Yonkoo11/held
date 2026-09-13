@@ -4,13 +4,13 @@
 import fs from 'node:fs';
 import { launch, record, settled, sleep, smoothScrollTo, OUT } from './lib.mjs';
 
-const BASE = process.env.BASE || 'http://127.0.0.1:4098';
+const BASE = process.env.BASE || 'http://127.0.0.1:4098';   // a second seller with a short review window
 const QUESTION = process.env.QUESTION || 'Can a Hedera scheduled transaction be cancelled before it executes?';
 const name = process.env.NAME || 'take2';
 const ROW = '#jobs .row:first-child';
 
 const { browser, page } = await launch();
-await page.goto(`${BASE}/`, { waitUntil: 'networkidle0' });
+await page.goto(`${BASE}/ask`, { waitUntil: 'networkidle0' });   // the buy lives on /ask since the rebuild
 await settled(page);
 await sleep(800);
 
@@ -21,8 +21,8 @@ const mark = (k) => { marks[k] = +((Date.now() - t0) / 1000).toFixed(2); console
 
 mark('top');
 await sleep(1000);
-const dealY = await page.evaluate(() => document.querySelector('.deal').getBoundingClientRect().top + window.scrollY);
-await smoothScrollTo(page, Math.max(0, dealY - 160), 1500);
+const dealY = await page.evaluate(() => document.querySelector('.box').getBoundingClientRect().top + window.scrollY);
+await smoothScrollTo(page, Math.max(0, dealY - 180), 1500);
 await page.click('#q');
 await page.type('#q', QUESTION, { delay: 45 });
 await sleep(600);

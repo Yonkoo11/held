@@ -1,133 +1,162 @@
 # Held: paste-ready ETHOnline 2026 form copy
 
-Humanized 2026-09-13 (em dashes removed, bolded inline-header list turned into prose, one triadic
-run broken). Paste each block into the matching field. Nothing below is a hole except the video
-line, which is filled the moment the release upload finishes.
+Each block below is ONE line per paragraph with no hard wrapping, so selecting a block and pasting
+it into a form field gives clean paragraphs instead of a ragged column. Blank lines between
+paragraphs are intentional and should be kept.
 
-## Project name
+Verified 2026-09-13: short description 93/100 characters, description and how-it's-made both over
+the 280 minimum, no em dashes, no curly quotes anywhere.
+
+
+================================================================================
+PROJECT NAME
+================================================================================
 Held
 
-## Category (recommendation)
-Payments (if the list has it), otherwise Infrastructure. Reason: the whole idea is one change to a
-payment flow.
 
-## Emoji
+================================================================================
+CATEGORY
+================================================================================
+Infrastructure
+
+
+================================================================================
+EMOJI
+================================================================================
 🧾
 
-## Tagline / short description
-An x402-gated agent service on Hedera where the payment is held in escrow until the buyer has
-actually read what the agent produced.
 
-## Project description
-x402 pays the seller the moment a request is served. For a weather API that is fine. For agent
-work it is backwards: you only find out whether you got anything useful after the money has gone,
-and your only recourse is a support email.
+================================================================================
+DEMONSTRATION LINK
+================================================================================
+https://heldprotocol.xyz
 
-Held keeps the x402 flow exactly as it is and changes one field. payTo points at an escrow account
-instead of the seller. The buyer pays, gets the deliverable immediately, and then decides. Approve
-and the seller is paid. Reject and the buyer is refunded. Say nothing and a Hedera scheduled
-transaction pays the seller when the review window expires, so silence is not a veto and a seller
-cannot have their money trapped by a buyer who never looks.
 
-Everything that happened is appended to a Hedera Consensus Service topic: what was asked, which
-version of the agent answered, the hash of what it produced, and what the buyer decided. Anyone can
-read that from the mirror node without trusting either party.
+================================================================================
+SHORT DESCRIPTION  (93 of 100 characters)
+================================================================================
+x402 payments that land in escrow, not the seller, until the buyer has read what they bought.
 
-The agent's version id is a hash of its prompt template, its model and its own source code. That
-matters because it is what the buyer is really approving. Not "some agent" but a specific,
-identifiable build. Change the agent and the id changes.
 
-Three real paid requests settled on Hedera testnet on 2026-09-12, one for each ending (approved,
-rejected, released by the chain's own timer), all confirmed by the mirror node. The transaction ids
-are in PROOF.md in the repo, and /proof on the live site reads the escrow account and the topic
-straight from Hedera's mirror node in your own browser, with no Held server in the path.
+================================================================================
+DESCRIPTION
+================================================================================
+x402 pays the seller the moment a request is served. For a weather API that is fine. For agent work it is backwards: you find out whether you got anything useful only after the money has gone, and your only recourse is a support email.
 
-What we are not claiming: escrow and an audit trail do not make an agent's output correct, and
-nothing here checks whether an answer is any good. What it proves is narrower and checkable. Who
-produced what, when, with which agent version, and that the buyer had a real chance to look before
-the money moved.
+Held keeps the x402 flow exactly as it is and changes one field. payTo points at an escrow account instead of the seller. You pay, you get the deliverable immediately, and then you decide. Approve and the seller is paid. Reject and you are refunded. Say nothing and a Hedera scheduled transaction pays the seller when the review window expires, so silence is not a veto and a seller cannot have their money trapped by a buyer who never looks.
 
-## How it's made
-Payments run through x402 via Blocky402. The facilitator's /supported endpoint advertises the exact
-scheme on hedera:testnet and acts as fee payer (account 0.0.7162784), so the buying agent needs no
-HBAR for gas at all. The seller calls /verify before doing any work and /settle afterwards. Built
-against @x402/core, @x402/hedera and @x402/fetch v2.25.0.
+That last ending is the one people do not expect. A card authorisation that nobody captures expires backwards, and the payer keeps the money. This expires forwards.
 
-The escrow account is simply the payTo in the payment requirements. One field, and it is the whole
-idea.
+Everything that happened is appended to a Hedera Consensus Service topic: what was asked, which build of the agent answered, the hash of what it produced, and what the buyer decided. Anyone can read it from the mirror node without trusting either party.
 
-Scheduled transactions arm the auto-release at payment time with the review deadline as the expiry,
-and are deleted if the buyer decides early. HCS carries the evidence trail. Prices are in HBAR by
-default (8 decimals, tinybars) because a fresh testnet account is funded with it automatically;
-setting PAY_ASSET=usdc switches to testnet USDC 0.0.429274.
+Three real paid requests settled on Hedera testnet, one for each ending. The transaction ids are in the repo and on HashScan.
 
-Two things cost real time and are worth knowing about.
 
-The Hedera x402 scheme advertises an "authorization" payment flow, which looks at first like it
-could hold funds pending approval. It cannot. The payload is a partially signed Hedera transaction,
-and those expire in minutes, not days. That is exactly why the escrow has to be a separate account
-with its own later transfer, and it is the thing most likely to be got wrong by anyone building
-this.
+================================================================================
+HOW IT'S MADE
+================================================================================
+The service is an ordinary x402 resource server built on @x402/core, @x402/fetch and @x402/hedera at v2.25.0, with Blocky402 as the facilitator on testnet. A client that already speaks x402 needs no changes to buy from it.
 
-Every outside dependency has a declared degraded tier. The app prints which tier it chose at boot
-and stamps it on every receipt. With no model key the worker falls back to a deterministic
-responder that says so in its own output. This was not decoration: during the build the Anthropic
-key on the machine ran out of credit mid-run, the worker failed over, and the demo continued.
+The escrow is a plain Hedera account rather than a contract. Settlement happens immediately and irreversibly, so the seller knows the money is real, but it lands somewhere neither party can unilaterally take it from. Release is a separate, later transfer.
 
-The sharpest lesson was ours. Our sweeper released a job at the deadline while the network's own
-scheduled transaction also executed it, and the escrow paid twice for one job, thirteen seconds
-apart, visible on chain. A service that arms a scheduled transaction has to observe it rather than
-repeat it. That fix is in src/seller.js and the reasoning is in INVARIANTS.md.
+The deadline is a Hedera scheduled transaction armed at payment time, with the review deadline as its expiry and waitForExpiry set true. When nobody decides, Hedera executes it and the service only observes the result. The sweeper watches rather than transfers, which is what stops a job being paid out twice.
 
-## Links
-Source: https://github.com/Yonkoo11/held
-Live: https://heldprotocol.xyz (same service on Railway: https://held-production-0ce9.up.railway.app)
-Demo video: https://youtu.be/E6pMtAp4fls
+I tried the deferred x402 flow first. The Hedera scheme declares authorization as its default, so on paper settlement can be deferred past the request. It cannot be deferred far enough: the payload is a partially signed Hedera transaction and those expire in minutes, while a review window runs for hours. So Held holds money in an account rather than holding a signature.
+
+The agent's version id is a hash of its prompt template, its model and its own source, because that is what a buyer is really approving. Not some agent, a specific identifiable build.
+
+The proof page reads Hedera's mirror node from the visitor's own browser, with no server of ours in the path, so it keeps working whether or not the service is running.
+
+
+================================================================================
+GITHUB REPOSITORY
+================================================================================
+Account: Yonkoo11
+Repository: held
+URL: https://github.com/Yonkoo11/held
+
+
+================================================================================
+TECH STACK
+================================================================================
+Hedera
+x402
+Node.js
+JavaScript
+HTML
+CSS
+
+
+================================================================================
+VIDEO LINK
+================================================================================
+https://youtu.be/E6pMtAp4fls
+
+
+================================================================================
+SELECT PRIZES
+================================================================================
+Select ONLY: Hedera - AI & Agentic Payments on Hedera
+
+Do NOT select the main prize pool or finalist judging.
+Leave Bazantic unselected, no account exists.
+
+
+================================================================================
+HEDERA: HOW THE INTEGRATION WORKS  (if the prize asks)
+================================================================================
+The x402 402 challenge names an escrow account in payTo instead of the seller, so paying settles immediately and irreversibly but lands somewhere neither party can take from unilaterally. Blocky402 is the facilitator on testnet and the fee payer covers gas, so a buying agent needs no HBAR of its own. Release is a later Hedera transfer, and the deadline path is a Hedera scheduled transaction armed at payment time with waitForExpiry set, which Hedera executes on its own when nobody decides. Every state change is appended to a Hedera Consensus Service topic, so the whole trail is readable from the mirror node without trusting the service. Escrow account 0.0.10495061, evidence topic 0.0.10495064.
+
+
+================================================================================
+FEEDBACK FOR HEDERA  (if the prize asks)
+================================================================================
+Blocky402 on testnet needing no account and no API key is the reason this got built at all. I had a paid request working within an hour of starting.
+
+Scheduled transactions with waitForExpiry are the load-bearing primitive here, and I could not find a worked example of arming one with a future expiry and then observing its execution from a mirror node. The docs describe the fields but not that lifecycle. A single end-to-end sample would have saved me most of a day.
+
+One sharp edge worth a warning in the docs: PrivateKey.fromStringED25519() silently accepts a raw ECDSA key and returns a different, valid-looking key rather than throwing. Everything then fails later with an INVALID_SIGNATURE that points nowhere near the real cause.
+
+The x402 Hedera packages are days old and their API is not in any model's training data, so I read the installed type definitions instead of writing calls from memory. That is a good thing about the packages, not a complaint: the types are accurate.
+
+
+================================================================================
+AI TOOLS USED  (if the form asks)
+================================================================================
+Claude Code wrote most of the code in this repository, with me directing it. The idea, the track choices, what to cut and what was not good enough are mine, and the record of those decisions is in the repo under spec/ rather than asserted here. AI-USE.md names the specific interventions and what each one changed, including the security review that found an authorisation hole and a double payout, both of which were real and on chain. The narration in the demo video is my own voice, as the rules require.
+
+
+================================================================================
+OTHER LINKS, IF A FIELD WANTS THEM
+================================================================================
 Escrow account: https://hashscan.io/testnet/account/0.0.10495061
 Evidence topic: https://hashscan.io/testnet/topic/0.0.10495064
 An auto-release schedule: https://hashscan.io/testnet/schedule/0.0.10495601
+Railway mirror of the same service: https://held-production-0ce9.up.railway.app
 
-## Partner prizes
-Partner prizes only. Do NOT tick the main pool / finalist judging.
-1. Hedera: AI & Agentic Payments on Hedera. (Also eligible for Hedera's Open Source track, same
-   selection.)
-2. Bazantic: only if an account already exists. No account = leave empty.
-3. Empty on purpose.
 
-## Hedera: requirement checklist (if the form asks)
-Live x402-gated service on Hedera testnet via Blocky402: yes, https://heldprotocol.xyz, escrow
-0.0.10495061, facilitator api.testnet.blocky402.com.
-Agent consuming it with at least one real paid request: yes, three on 2026-09-12, mirror-node
-confirmed, see PROOF.md.
-Public repo with setup, architecture and payment flow in the README: yes.
-Demo video showing a paid request: yes, 2:08.
-Extra-points items actually exercised on testnet: pay-per-call metering, HCS audit trail (topic
-0.0.10495064), scheduled transactions for the auto-release, agent version identity. Not
-implemented: A2A negotiation, UCP discovery, HTS custom fees.
+================================================================================
+IMAGES  (all files are in submission/images/)
+================================================================================
+Logo, square 512x512        submission/images/logo-512.png
+Cover image, 16:9 1280x720  submission/images/cover.png
 
-## Feedback for Hedera
-What worked. Blocky402 on testnet needs no account and no API key, which removed the usual
-first-day blocker entirely. The facilitator paying gas means a buying agent needs no HBAR at all,
-which is the right default for agent-to-agent payments and is underplayed in the docs. Scheduled
-transactions with waitForExpiry are the reason this project exists in this shape: nothing else
-gives you a deadline that executes itself with nobody online.
+Screenshots, upload at least three. Suggested order:
+  submission/images/01-home.png        the argument, live wire diagram
+  submission/images/03-proof.png       Hedera mirror node read in the browser
+  submission/images/04-build.png       the live 402 with payTo at escrow
+  submission/images/02-ask.png         the buy flow and the job register
+  submission/images/05-invariants.png  the 13 properties and the two that broke
+  submission/images/06-ledger.png      every job, filterable
 
-What cost us time, in the order it hurt:
 
-1. createClientHederaSigner takes positional arguments and a PrivateKey object. Passing a config
-   object fails with "t.startsWith is not a function", which points nowhere near the real problem.
-2. The network field must be the CAIP-2 string hedera:testnet. Passing "testnet" throws
-   "Unsupported Hedera network", and the doc comment on the field suggests otherwise.
-3. TransactionReceipt has no transactionId. Reading it there gives undefined, and a fallback we had
-   written recorded the literal string SUCCESS as a transaction id for a while.
-4. PrivateKey.fromStringED25519() silently accepts a raw ECDSA key and returns a different,
-   working-looking key. The portal issues ECDSA by default, so this is easy to hit and gives no
-   error until a signature is rejected much later. We now ask the mirror node what key type an
-   account has and check the derived public key against it before starting.
-5. The SDK rename from @hashgraph/sdk to @hiero-ledger/sdk means a project can end up with two
-   copies and two incompatible AccountId classes. Worth a louder note in the x402 packages.
+================================================================================
+FUTURE  (what's next for this project)
+================================================================================
+The escrow is a plain Hedera account today, which is the right call for a three day build but means the operator holds the key. The next step is moving it to a contract on Hedera's EVM so release is enforced by code rather than by us behaving well, with the same scheduled transaction arming the deadline.
 
-## AI tools used (if the form asks)
-Claude Code wrote most of the code. A human directed it and made the calls. The full disclosure is
-AI-USE.md in the repo, with the planning trail in spec/, because the rules ask for the planning
-artifacts and not just the output.
+Pricing is a flat 0.05 HBAR per question. A buyer approving work should be able to pay more for work that was better than asked for, and a seller should be able to quote per job rather than per call. That changes the 402 challenge, not the escrow mechanism.
+
+Right now a rejection is a full refund and there is nothing in between. Real disputes are usually partial, so a split release, where the buyer releases part and refunds the rest, is the obvious next ending to add.
+
+The agent version id is already a hash of the prompt, the model and the source. Publishing those hashes to the same consensus topic would let a buyer check that the build which answered them is the build the seller advertised, rather than taking the byline on trust.

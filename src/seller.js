@@ -449,8 +449,27 @@ const boot = async () => {
   if (!t.settlement.degraded && DEMO_BUY_ENABLED) {
     console.log('[seller] WARNING: DEMO_BUY=on with real settlement — /demo/buy spends this account. Public exposure will drain it.');
   }
-  setInterval(() => sweep().catch((e) => console.error('[sweep]', e)), 15000);
-  app.listen(PORT, () => console.log(`[seller] listening on http://localhost:${PORT}`));
+  const sweeper = setInterval(() => sweep().catch((e) => console.error('[sweep]', e)), 15000);
+  const server = app.listen(PORT, () => console.log(`[seller] listening on http://localhost:${PORT}`));
+
+  // A host replacing this container sends SIGTERM. Without a handler the process is killed
+  // mid-request and exits non-zero, which the platform reports as a crash on every routine
+  // redeploy. It also matters for more than tidiness: this service settles payments, and a
+  // request cut off between taking the money and recording the job is the exact failure the
+  // ordering in `work` exists to prevent. So stop accepting new connections, let the in-flight
+  // ones finish, and exit cleanly.
+  let closing = false;
+  for (const signal of ['SIGTERM', 'SIGINT']) {
+    process.on(signal, () => {
+      if (closing) return;                       // a second signal must not re-enter this
+      closing = true;
+      console.log(`[seller] ${signal} received, finishing in-flight requests`);
+      clearInterval(sweeper);
+      server.close(() => { console.log('[seller] closed cleanly'); process.exit(0); });
+      // If a client holds a connection open, do not hang the deploy forever.
+      setTimeout(() => { console.log('[seller] shutdown timed out, exiting'); process.exit(0); }, 10000).unref();
+    });
+  }
 };
 
 boot().catch((e) => {

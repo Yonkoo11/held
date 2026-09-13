@@ -22,6 +22,8 @@
 </head>
 <body>
 
+<a class="skip" href="#main">Skip to content</a>
+
 <nav>
   <a class="mark" href="/"><img src="/logo.svg" alt=""><span>Held</span></a>
   <div class="links">
@@ -33,8 +35,7 @@
   </div>
   <span class="where">hedera testnet &middot; escrow <b id="escrow">&hellip;</b></span>
 </nav>
-
-<section class="page" style="padding-bottom:0">
+<section id="main" tabindex="-1" class="page" style="padding-bottom:0">
   <h1>Everything that has been bought.</h1>
   <p class="standfirst">Every job this service has taken money for, whoever bought it. The ones you
     paid for carry buttons; the rest are here so the record is not selective.</p>
@@ -60,7 +61,7 @@
 
 <section class="register" style="padding-top:0">
   <div class="reghead"><span class="lab">The register</span><span class="lab" id="count"></span></div>
-  <div id="jobs"><p class="empty">Reading the register&hellip;</p></div>
+  <div id="jobs" aria-live="polite" aria-relevant="additions text"><p class="empty">Reading the register&hellip;</p></div>
 </section>
 
 <footer>

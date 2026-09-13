@@ -200,3 +200,41 @@ ffmpeg
 
 Describe how AI tools were used
 Claude Code was the implementer and I directed it. It wrote most of the code in this repository; I decided what to build, which tracks to enter, what to cut and what was not good enough, and the record of those decisions is committed under spec/ rather than just asserted. Two examples of what that division actually produced: a review I asked for found an authorisation hole on approve and reject plus a double payout, both real and both visible on chain, and neither caught by a passing test. A design pass I rejected as generic was rebuilt from three rendered directions with the reasoning written down. AI-USE.md in the repo names every intervention and what changed as a result. The narration in the demo video is my own voice, as the rules require.
+
+
+================================================================================
+HEDERA PRIZE: HOW ARE YOU USING THIS PROTOCOL / API?
+================================================================================
+Held is an x402 resource server on Hedera testnet, gated through Blocky402, and the whole idea is one field in the 402 challenge. payTo names an escrow account rather than the seller, so paying settles immediately and irreversibly but the money lands somewhere neither side can take from on its own. Release is a later Hedera transfer. The deadline path is a Hedera scheduled transaction armed at payment time with waitForExpiry set, so when a buyer never comes back Hedera executes it and pays the seller without us touching anything. Every state change is appended to a Hedera Consensus Service topic, which means the trail is readable from the mirror node by anyone, without trusting us. Escrow 0.0.10495061, evidence topic 0.0.10495064, and the proof page reads the mirror node straight from the visitor's browser.
+
+
+================================================================================
+HEDERA PRIZE: LINK TO THE LINE OF CODE
+================================================================================
+https://github.com/Yonkoo11/held/blob/master/src/seller.js#L90
+
+
+================================================================================
+HEDERA PRIZE: EASE OF USE RATING
+================================================================================
+8 stars out of 10
+
+
+================================================================================
+HEDERA PRIZE: ADDITIONAL FEEDBACK FOR THE SPONSOR
+================================================================================
+Blocky402 needing no account and no API key on testnet is why this exists. I had a real paid request settling within an hour of starting, and that never happens.
+
+The gap was scheduled transactions. They are the load-bearing piece here and I could not find one worked example of arming a schedule with a future expiry, setting waitForExpiry, and then watching it execute from the mirror node. The reference describes the fields but not that lifecycle. One end to end sample would have saved me most of a day.
+
+A sharp edge worth a warning in the docs: PrivateKey.fromStringED25519() accepts a raw ECDSA key without complaint and hands back a different, perfectly valid looking key. Nothing fails until much later, with an INVALID_SIGNATURE that points nowhere near the real problem. An explicit throw there would have saved several hours.
+
+Smaller thing: the mirror node topic messages endpoint defaults to ascending order. Reading the first hundred messages looks correct on day one and silently returns nothing once a topic passes a hundred entries. That cost me a real bug, and a note in the docs would have caught it.
+
+The @x402/hedera packages are days old and their API predates any model's training data, so I read the installed type definitions instead of guessing. The types are accurate and that made it workable.
+
+
+================================================================================
+WHICH OTHER PARTNERS' TECHNOLOGIES HAVE YOU USED?
+================================================================================
+Leave empty. No other partner tech is in this project.

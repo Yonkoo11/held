@@ -81,7 +81,10 @@
 
   /* ── stage ─────────────────────────────────────────────────────────────── */
   .stage {
+    /* svh is the viewport WITHOUT mobile browser chrome, so the stage does not jump
+       when Safari's toolbar collapses mid-scroll. vh first as the fallback. */
     min-height: 86vh;
+    min-height: 86svh;
     display: flex; flex-direction: column; justify-content: center;
     padding: clamp(36px, 5vw, 68px) 0 clamp(40px, 5vw, 64px);
   }
@@ -543,7 +546,7 @@
   /* A single warm pool behind the top of the page. One, not three, and it sits under
      the fold line rather than floating behind the headline as a decorative blob. */
   body::after {
-    content: ''; position: fixed; inset: 0 0 auto; height: 62vh; z-index: 0;
+    content: ''; position: fixed; inset: 0 0 auto; height: 62vh; height: 62svh; z-index: 0;
     pointer-events: none;
     background: radial-gradient(120% 78% at 50% -14%, rgba(176, 67, 28, 0.055), transparent 68%);
   }
@@ -678,3 +681,30 @@
   .step.paid i { background: var(--accent); }
   .step.released i { background: var(--paid); }
   .step.refunded i { background: var(--back); }
+
+
+  /* ── keyboard first ───────────────────────────────────────────────────────
+     Five nav links sit before the content on every page. Without this a keyboard
+     user tabs through all of them on every single page before reaching anything
+     they came for. Invisible until focused, so it costs the design nothing. */
+  .skip {
+    position: absolute; left: 8px; top: -60px; z-index: 50;
+    padding: 10px 16px; border-radius: var(--r-md);
+    background: var(--ink); color: var(--paper);
+    font: 500 14px/1 var(--sans); text-decoration: none;
+    transition: top 150ms var(--ease);
+  }
+  .skip:focus { top: 8px; outline: none; box-shadow: 0 0 0 3px var(--accent-ring); }
+
+  /* ── the question's own limit, shown before it bites ──────────────────────
+     The server rejects anything over 2000 characters. That cap was invisible: you
+     could write 2500, press the button, and only then be told. It stays quiet
+     until you are close to it. */
+  .counter {
+    margin-left: auto; align-self: center;
+    font: 400 12px/1 var(--mono); letter-spacing: .04em;
+    color: var(--ink-4); opacity: 0;
+    transition: opacity 150ms var(--ease), color 150ms var(--ease);
+  }
+  .counter[data-near="true"]  { opacity: 1; }
+  .counter[data-over="true"]  { opacity: 1; color: var(--back); }

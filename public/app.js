@@ -294,3 +294,23 @@ loadHealth().then(() => { if ($('jobs')) loadJobs(); else loadDeadlinesOnly(); }
     if (to === here) { a.setAttribute('aria-current', 'page'); }
   });
 })();
+
+
+/* The server rejects a question over MAX_QUESTION_CHARS (2000). That limit used to be invisible:
+   you could write past it, press the button, and only find out after the request failed. maxlength
+   stops the overrun; this tells you it is coming, and only once you are near it. Silence until
+   1600 characters, because a counter that is always on is just noise. */
+(() => {
+  const q = $('q'), c = $('counter');
+  if (!q || !c) return;
+  const LIMIT = Number(q.getAttribute('maxlength')) || 2000;
+  const NEAR = Math.round(LIMIT * 0.8);
+  const paint = () => {
+    const n = q.value.length;
+    c.textContent = `${n} / ${LIMIT}`;
+    c.dataset.near = String(n >= NEAR);
+    c.dataset.over = String(n >= LIMIT);
+  };
+  q.addEventListener('input', paint);
+  paint();
+})();

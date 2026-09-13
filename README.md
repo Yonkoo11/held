@@ -14,6 +14,17 @@ node. Escrow [`0.0.10495061`](https://hashscan.io/testnet/account/0.0.10495061) 
 Hedera testnet. <https://held-production-0ce9.up.railway.app> is the same service on its Railway
 address, if you would rather see where it actually runs.
 
+## The site
+
+| | |
+|---|---|
+| [`/`](https://heldprotocol.xyz/) | the argument, and a live wire diagram |
+| [`/ask`](https://heldprotocol.xyz/ask) | buy an answer and watch the money sit in escrow |
+| [`/ledger`](https://heldprotocol.xyz/ledger) | every job, filterable by whether the money is still held |
+| [`/proof`](https://heldprotocol.xyz/proof) | the escrow account and the consensus topic, read from Hedera's mirror node **by your own browser**. No Held server in the path; it works whether or not this service is running |
+| [`/build`](https://heldprotocol.xyz/build) | the live 402 challenge, fetched from `/work` as you load the page, with `payTo` pointing at escrow rather than the seller |
+| [`/invariants`](https://heldprotocol.xyz/invariants) | thirteen properties the money depends on, and the two that broke |
+
 Built for ETHOnline 2026, Hedera "AI & Agentic Payments".
 
 ![3 endings proven on testnet](https://img.shields.io/badge/endings_proven_on_testnet-3_of_3-2f6b43)

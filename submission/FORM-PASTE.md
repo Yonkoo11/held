@@ -82,7 +82,7 @@ repeat it. That fix is in src/seller.js and the reasoning is in INVARIANTS.md.
 ## Links
 Source: https://github.com/Yonkoo11/held
 Live: https://heldprotocol.xyz (same service on Railway: https://held-production-0ce9.up.railway.app)
-Demo video: https://github.com/Yonkoo11/held/releases/download/v1.0.0/held-demo.mp4
+Demo video: https://youtu.be/E6pMtAp4fls
 Escrow account: https://hashscan.io/testnet/account/0.0.10495061
 Evidence topic: https://hashscan.io/testnet/topic/0.0.10495064
 An auto-release schedule: https://hashscan.io/testnet/schedule/0.0.10495601
@@ -100,7 +100,7 @@ Live x402-gated service on Hedera testnet via Blocky402: yes, https://heldprotoc
 Agent consuming it with at least one real paid request: yes, three on 2026-09-12, mirror-node
 confirmed, see PROOF.md.
 Public repo with setup, architecture and payment flow in the README: yes.
-Demo video showing a paid request: yes, 2:14.
+Demo video showing a paid request: yes, 2:08.
 Extra-points items actually exercised on testnet: pay-per-call metering, HCS audit trail (topic
 0.0.10495064), scheduled transactions for the auto-release, agent version identity. Not
 implemented: A2A negotiation, UCP discovery, HTS custom fees.

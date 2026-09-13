@@ -15,8 +15,9 @@ tier on every receipt it writes. A demo on the bottom tier is still a real demo.
 - [x] Blocky402 facilitator — **PROBED 2026-09-07: no account and no API key needed.** The site states "Testnet MVP Ready - Open Access, No API Key Required", and it is MIT-licensed and self-hostable (`blockydevs/blocky402`). Packages `@x402/core`, `@x402/fetch`, `@x402/hedera` all resolve on npm at v2.25.0, published 2026-09-03/04. — fallback: self-host the same MIT facilitator locally, or the reference PoC at github.com/hedera-dev/x402-inference-pay-per-request-poc; identical flow, still Hedera.
 - [x] **Domain: `heldprotocol.xyz`, bought 2026-09-12. Deployed 2026-09-12, waiting on DNS.**
       The service runs on Railway and is live at <https://held-production-0ce9.up.railway.app>.
-      Both `heldprotocol.xyz` and `www` are registered on the service; the two Namecheap records
-      and the key-loading command are in [`DEPLOY.md`](DEPLOY.md). Option (b) below was taken, with
+      Both `heldprotocol.xyz` and `www` are registered on the service; the four Namecheap records
+      (two routing, two TXT ownership proofs, which is the part that was missing) and the
+      key-loading command are in [`DEPLOY.md`](DEPLOY.md). Option (b) below was taken, with
       the key-custody tradeoff stated there and in the README's honest status.
       **Superseded detail, kept for the record:** at the time of writing it was **not pointing
       anywhere** — as of this line it has no nameservers and no A record, so it resolves to nothing.

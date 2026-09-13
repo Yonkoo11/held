@@ -22,42 +22,43 @@ keys are set yet. It says so on itself rather than pretending.
 
 Domain List, then Manage on heldprotocol.xyz, then the **Advanced DNS** tab.
 
-**Delete first. This is the step that actually went wrong.** Namecheap puts parking records on a
-new domain, and adding the Railway records without removing those leaves both in place. Checked on
-2026-09-13, after the new records were added:
+**Four records, not two.** This is the part that was wrong for a day. Railway needs a TXT record
+proving you own the domain, *as well as* the record that routes traffic. Their documentation is
+blunt about it: "Both records are required, the domain will not verify with only the CNAME in
+place." Without the TXT, the certificate sits in `VALIDATING_OWNERSHIP` forever, which is exactly
+what it did, and the site answers plain HTTP but has no HTTPS at all.
 
-```
-heldprotocol.xyz      -> 69.46.46.18, 162.255.119.137     both Namecheap parking, no Railway
-www.heldprotocol.xyz  -> y37qma4r.up.railway.app, 69.46.46.0    CNAME plus a leftover A record
-```
-
-A CNAME cannot coexist with another record on the same name. That is invalid DNS and it is why the
-domain resolved inconsistently and TLS failed. So before adding anything, delete every existing
-record on `@` and on `www`: the `URL Redirect Record`, any `A Record` pointing at `69.46.46.x` or
-`162.255.119.137`, and any `CNAME Record` pointing at `parkingpage.namecheap.com`. The Advanced DNS
-tab should have no `@` or `www` rows left at all before you add the two below.
-
-**Then add these two:**
+Delete any leftover `@` or `www` rows first (a `URL Redirect Record`, an `A Record` pointing at
+`69.46.46.x` or `162.255.119.137`, a `CNAME Record` pointing at `parkingpage.namecheap.com`). A
+CNAME cannot share a name with another record, so a leftover row makes the whole name invalid.
 
 | Type | Host | Value | TTL |
 |---|---|---|---|
 | ALIAS Record | `@` | `ooqoz4pq.up.railway.app` | Automatic |
 | CNAME Record | `www` | `8rlcixxv.up.railway.app` | Automatic |
+| TXT Record | `_railway-verify` | `railway-verify=bfb02e88524ea8afa37883e247984c4ec5348d9da038db1bb5956bb687cffd72` | Automatic |
+| TXT Record | `_railway-verify.www` | `railway-verify=15533553174e1af857af2feda44d0275b2fb470831d7fde3b8e2b30b64e2f593` | Automatic |
 
 The root one has to be **ALIAS**, not CNAME. Plain DNS does not allow a CNAME on the root of a
-domain; Namecheap's ALIAS record is their way of doing it and it is in the same dropdown.
+domain; Namecheap's ALIAS record is their way round it and Railway's docs name Namecheap
+specifically as a provider whose workaround they accept.
 
-Propagation is usually minutes. Railway then issues the TLS certificate itself.
+The two tokens are tied to these particular domain registrations. Deleting and re-adding a custom
+domain in Railway mints new ones, so if that happens the TXT values have to be re-read and replaced.
+They are not secret; they are meant to be published in DNS.
 
-**If the certificate sticks on "validating ownership":** on 2026-09-13 both domains sat in
-`CERTIFICATE_STATUS_TYPE_VALIDATING_OWNERSHIP` for forty minutes while Railway reported
-`DNS_RECORD_STATUS_PROPAGATED`. Checked and ruled out at the time: no CAA record on the zone, the
-`/.well-known/acme-challenge/` path reachable over plain HTTP rather than redirected, the edge
-routing the hostname (HTTP 301 to HTTPS rather than 404), and DNS resolving to the exact edge each
-domain had been registered against. **No cause was established on our side.** The remedy applied was
-to delete both custom domains and recreate them through the API, which mints fresh targets and a
-fresh certificate order; the values above are from that second attempt. If it wedges again, that is
-a Railway-side issue to raise with their support rather than something to keep re-pointing DNS at.
+Propagation is usually minutes. Railway then issues the certificate itself.
+
+**What the diagnosis was before, and why it was wrong.** On 2026-09-13 this file said no cause had
+been established, after ruling out CAA records, ACME challenge reachability, edge routing and DNS
+propagation. Three of those four checks were sound and the fourth was actively misleading: Railway's
+API reports `DNS_RECORD_STATUS_PROPAGATED` even when the record it wants is **absent**, so that
+field was read as "DNS is fine" when it meant nothing at all. The useful query is
+`domains { customDomains { status { verified verificationDnsHost verificationToken
+dnsRecords { requiredValue currentValue } } } }`, which shows `verified: false` and prints the
+wanted value next to the actual one. Both domains were pointing at edges belonging to an earlier,
+deleted registration, and neither TXT record had ever existed. Check `verified` and
+`requiredValue` vs `currentValue` first; ignore the propagation field.
 
 ## Step 2 — the keys
 

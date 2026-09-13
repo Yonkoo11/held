@@ -66,7 +66,10 @@ const clipFrames = (segments: Segment[]) => segments.reduce((a, s) => a + sec(s.
 // The end mark is taken when the script stops, a hair after the last frame ffmpeg wrote. Reading
 // right up to it renders a black tail, so back off 50ms. The scene lengths are unaffected.
 const T1_END = M1.end - 0.05;
-const PAY_LEN = 21.51, ROW_LEN = 16.04, APPROVE_LEN = 11.22;
+// Set from the narrator's actual clips (ffprobe) plus a 0.85s tail so the picture breathes
+// after each line rather than cutting on the last syllable. Re-run `npm run timings` after any
+// re-record and these three numbers are the only ones that change.
+const PAY_LEN = 19.18, ROW_LEN = 17.64, APPROVE_LEN = 14.06;
 const T1_START = +(T1_END - (PAY_LEN + ROW_LEN + APPROVE_LEN)).toFixed(2);
 
 const paySeg: Segment[] = [{ from: T1_START, to: +(T1_START + PAY_LEN).toFixed(2) }];
@@ -79,18 +82,18 @@ const approveSeg: Segment[] = [{ from: rowSeg[0].to, to: +(rowSeg[0].to + APPROV
 // 0.5s past the end of this recording, and a clip that runs off the end of its source renders black.
 // Lengths are unchanged at 12s + 8s, because the narration is cut to 20s.
 const deadlineSeg: Segment[] = [
-  { from: M2.zero - 9, to: M2.zero + 3 },
-  { from: M2.released - 2.1, to: M2.released + 5.9 },
+  { from: M2.zero - 6.75, to: M2.zero + 3 },      // the countdown running out
+  { from: M2.released - 1.5, to: M2.released + 5.5 }, // the flip, and the transaction id
 ];
 
 export const SCENES: readonly Scene[] = [
   {
-    key: "open", kind: "card", frames: sec(8), step: "",
+    key: "open", kind: "card", frames: sec(7.36), step: "",
     lines: ["Held."], small: "You pay first. The money waits until you have read what you bought.",
   },
   {
-    key: "claim", kind: "clip", frames: sec(12), step: "1 of 7 · the claim", file: "video/top.mp4",
-    segments: [{ from: 0.2, to: 12.2 }], cropTop: HEAD, // the page's own nav sits under the header band
+    key: "claim", kind: "clip", frames: sec(13.12), step: "1 of 7 · the claim", file: "video/top.mp4",
+    segments: [{ from: 0.05, to: 13.17 }], cropTop: HEAD, // the page's own nav sits under the header band
     titles: [
       { at: 0, text: "x402 pays the seller the instant the response is written." },
       { at: 4, text: "For agent work that is backwards." },
@@ -98,7 +101,7 @@ export const SCENES: readonly Scene[] = [
     ],
   },
   {
-    key: "quote", kind: "terminal", frames: sec(23), step: "2 of 7 · the 402",
+    key: "quote", kind: "terminal", frames: sec(16.67), step: "2 of 7 · the 402",
     titles: [
       { at: 0, text: "Here is the actual 402. Hedera testnet, priced in HBAR." },
       { at: 5, text: "payTo is the escrow account, not the seller's." },
@@ -146,22 +149,22 @@ export const SCENES: readonly Scene[] = [
     ],
   },
   {
-    key: "proof-account", kind: "proof", frames: sec(8.9), step: "7 of 7 · proof", file: "video/take3-account.mp4",
-    segments: [{ from: 0.05, to: 8.95 }], caption: `hashscan.io · escrow account ${ESCROW}`,
+    key: "proof-account", kind: "proof", frames: sec(11.03), step: "7 of 7 · proof", file: "video/take3-account.mp4",
+    segments: [{ from: 0.05, to: 11.08 }], caption: `hashscan.io · escrow account ${ESCROW}`,
     titles: [
       { at: 0, text: "None of this needs you to trust the service." },
       { at: 3.5, text: "Every payment, release and refund is on the public ledger." },
     ],
   },
   {
-    key: "proof-topic", kind: "proof", frames: sec(7), step: "7 of 7 · proof", file: "video/take3-topic.mp4",
-    segments: [{ from: 0.0, to: 7.0 }], caption: `hashscan.io · evidence topic ${TOPIC}`,
+    key: "proof-topic", kind: "proof", frames: sec(9.41), step: "7 of 7 · proof", file: "video/take3-topic.mp4",
+    segments: [{ from: 0.05, to: 9.46 }], caption: `hashscan.io · evidence topic ${TOPIC}`,
     titles: [
       { at: 0, text: "And the evidence trail is on a consensus topic anyone can read." },
     ],
   },
   {
-    key: "close", kind: "card", frames: sec(11), step: "",
+    key: "close", kind: "card", frames: sec(7.62), step: "",
     lines: ["Held."], small: `Escrow for agent work, settled on Hedera  ·  escrow ${ESCROW}  ·  topic ${TOPIC}`,
   },
 ];

@@ -1,1 +1,52 @@
-{}
+{
+  "open": {
+    "file": "audio/open.m4a",
+    "seconds": 6.464,
+    "frames": 194
+  },
+  "claim": {
+    "file": "audio/claim.m4a",
+    "seconds": 12.522667,
+    "frames": 376
+  },
+  "quote": {
+    "file": "audio/quote.m4a",
+    "seconds": 15.765333,
+    "frames": 473
+  },
+  "pay": {
+    "file": "audio/pay.m4a",
+    "seconds": 18.325333,
+    "frames": 550
+  },
+  "row": {
+    "file": "audio/row.m4a",
+    "seconds": 16.789333,
+    "frames": 504
+  },
+  "approve": {
+    "file": "audio/approve.m4a",
+    "seconds": 13.205333,
+    "frames": 396
+  },
+  "deadline": {
+    "file": "audio/deadline.m4a",
+    "seconds": 15.850667,
+    "frames": 476
+  },
+  "proof-account": {
+    "file": "audio/proof-account.m4a",
+    "seconds": 10.133333,
+    "frames": 304
+  },
+  "proof-topic": {
+    "file": "audio/proof-topic.m4a",
+    "seconds": 8.512,
+    "frames": 255
+  },
+  "close": {
+    "file": "audio/close.m4a",
+    "seconds": 6.72,
+    "frames": 202
+  }
+}

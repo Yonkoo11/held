@@ -38,9 +38,9 @@ await dismissCookies(page);
 // The transactions tab is where the settlements and releases are listed.
 await clickTab(page, 'Transactions');
 let stop = await record(page, 'take3-account');
-await sleep(2500);
-await smoothScrollTo(page, 700, 5000);
-await sleep(1500);
+await sleep(2800);
+await smoothScrollTo(page, 760, 6500);
+await sleep(3200);                       // longer than the narration clip, which is 10.1s
 await stop();
 
 await page.goto(TOPIC, { waitUntil: 'networkidle2', timeout: 90000 });
@@ -48,8 +48,8 @@ await dismissCookies(page);
 await clickTab(page, 'Messages');
 await sleep(2500);
 stop = await record(page, 'take3-topic');
-await sleep(2000);
-await smoothScrollTo(page, 500, 3500);
-await sleep(1500);
+await sleep(2500);
+await smoothScrollTo(page, 560, 5200);
+await sleep(3000);                       // longer than the narration clip, which is 8.5s
 await stop();
 await browser.close();

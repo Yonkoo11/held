@@ -147,6 +147,35 @@ contract HeldEscrowTest is Test {
         assertEq(address(escrow).balance, 0);
     }
 
+    /// The deadline OPENS the permissionless window. It does not CLOSE the buyer's.
+    /// A buyer who is still watching can reject at deadline + 1 and take a full refund, so long
+    /// as nobody has called `expire` yet. This is deliberate, and the alternative is worse: a hard
+    /// cutoff on the buyer would strand funds forever whenever a seller refuses payment, since
+    /// `expire` reverts in that case too (see the test below). The seller is never without
+    /// recourse, because the seller can call `expire` itself the second the deadline passes.
+    /// Pinned here so the behaviour is a decision rather than an accident.
+    function test_the_buyer_can_still_reject_after_the_deadline_until_someone_expires() public {
+        _fund(1 ether);
+        vm.warp(block.timestamp + WINDOW + 1);
+
+        vm.prank(buyer);
+        escrow.reject(JOB);
+        assertEq(buyer.balance, 10 ether, "a late reject still refunds in full");
+        assertEq(seller.balance, 0);
+
+        vm.expectRevert(HeldEscrow.AlreadySettled.selector);
+        escrow.expire(JOB);                     // and the race is settled, not run twice
+    }
+
+    /// Anyone includes the seller, which is the reason the window above is safe to leave open.
+    function test_the_seller_can_expire_its_own_job_the_moment_the_deadline_passes() public {
+        _fund(1 ether);
+        vm.warp(block.timestamp + WINDOW);
+        vm.prank(seller);
+        escrow.expire(JOB);
+        assertEq(seller.balance, 1 ether);
+    }
+
     // ── I1: at most one payout, however the recipient behaves ────────────────
     function test_cannot_settle_twice() public {
         _fund(1 ether);

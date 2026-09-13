@@ -55,3 +55,28 @@ a second approve on an already settled job reverted
 
 contract balance after all four endings: 0.0 HBAR
 ```
+
+## What a hostile read found
+
+Reviewed 2026-09-13 against the deployed source, before publishing. Two behaviours are real,
+neither is a bug, and both are pinned by tests so they stay decisions rather than accidents.
+
+**The deadline opens the permissionless window, it does not close the buyer's.** A buyer who is
+still watching can call `reject` at deadline + 1 and take a full refund, as long as nobody has
+called `expire` first. The obvious "fix", a hard cutoff on the buyer, is worse: `expire` pushes to
+the seller, so a seller contract that reverts on receipt would strand the money forever with the
+buyer no longer able to reclaim it. The seller is never without recourse here, because `expire` is
+permissionless *including for the seller*, who can call it the second the deadline passes. Pinned
+by `test_the_buyer_can_still_reject_after_the_deadline_until_someone_expires` and
+`test_the_seller_can_expire_its_own_job_the_moment_the_deadline_passes`.
+
+**A job id can be squatted.** `fund` takes the job id from the caller, so anyone can occupy an id
+with 1 tinybar and make the real buyer's `fund` revert with `JobExists`. Nothing is stolen and no
+held job is affected; the cost is that the buyer retries under a new id, and the attacker pays gas
+for every id they want to block. Job ids are server-generated random UUIDs, so squatting a specific
+one means seeing it first. Keying jobs by `(msg.sender, jobId)` would remove it outright, and that
+is the change to make if this ever runs anywhere that matters.
+
+**A seller that refuses payment reverts the whole settlement** rather than stranding the other
+side's share. That is deliberate and is covered by
+`test_a_seller_that_refuses_payment_reverts_the_whole_settlement`.

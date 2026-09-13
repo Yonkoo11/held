@@ -118,7 +118,7 @@ shows, without the service being involved at all.
 - **All four contract endings executed on Hedera's EVM**, including a partial split (1.25 to the
   seller, 0.75 back to the buyer) and an expiry pushed by an account that was neither the buyer, nor
   the seller, nor this service. The contract held **0.0 HBAR** afterwards, so nothing was stranded.
-  **19 of 19** contract tests pass, including a re-entrant seller that is paid exactly once and a
+  **21 of 21** contract tests pass, including a re-entrant seller that is paid exactly once and a
   256-run fuzz proving a split always conserves the amount. See [`evidence/CONTRACT.md`](evidence/CONTRACT.md).
 - Two invariants were **broken and fixed during the build**, both visible on chain. Both are written
   up with their causes in [`evidence/INVARIANTS.md`](evidence/INVARIANTS.md) rather than quietly
@@ -143,6 +143,11 @@ SLA, throughput, or behaviour under load, and none of that is claimed.
   makes the 402 quote scale with the question and caps it; the contract's `settle` splits a job
   between seller and buyer. The defaults stay flat and all-or-nothing so the recorded demo remains
   accurate.
+- **A contract job id can be squatted.** `fund` takes the job id from its caller, so anyone can
+  occupy an id with 1 tinybar and make the real buyer's call revert. Nothing is stolen and no held
+  job is touched; the buyer retries under a new id. Keying jobs by caller and id would remove it,
+  and that is the change to make before this runs anywhere that matters. Found by reviewing the
+  deployed source, written up in `evidence/CONTRACT.md`.
 - **The worker falls back.** If the model provider fails, output is produced by a deterministic
   stand-in, and every deliverable carries a byline naming which tier answered.
 
@@ -167,7 +172,7 @@ npm run go-live   # creates the escrow account, topic, and a funded buyer
 npm run seller
 npm run buyer ask "When does a Hedera scheduled transaction execute?"
 npm run prove           # replays all three endings and rewrites evidence/PROOF.md
-npm run test:contract   # 19 contract tests, local, no network
+npm run test:contract   # 21 contract tests, local, no network
 npm run prove:contract  # deploys to Hedera testnet and runs all four endings on chain
 ```
 
@@ -183,7 +188,7 @@ src/                  the service
 public/               the site: seven pages, one stylesheet, one script, no build step
 contracts/
   src/HeldEscrow.sol  escrow enforced by code: per-job amounts, partial release, permissionless expiry
-  test/               19 tests including re-entrancy and a conservation fuzz
+  test/               21 tests including re-entrancy and a conservation fuzz
 scripts/              go-live, prove-live, prove-contract, the attack and regression suites
 evidence/
   PROOF.md            transaction ids for all three endings, resolvable on HashScan

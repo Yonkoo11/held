@@ -31,7 +31,7 @@ jobs:
         run: node scripts/regression.js
 
   contract:
-    name: HeldEscrow (19 cases)
+    name: HeldEscrow (21 cases)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

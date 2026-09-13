@@ -1,0 +1,24 @@
+{
+  "name": "Held",
+  "tagline": "The money is paid, but held until you have looked.",
+  "primary": "#b0431c",
+  "accent": "#b0431c",
+  "secondary": "#2f6b43",
+  "background": "#faf8f4",
+  "surface": "#fdfbf6",
+  "text": "#17150f",
+  "onAccent": "#fff8f5",
+  "rule": "rgba(23, 21, 15, 0.11)",
+  "fonts": {
+    "display": "Fraunces",
+    "body": "Spline Sans",
+    "mono": "Spline Sans Mono"
+  },
+  "colorMode": "light-only",
+  "logoPath": "public/logo.svg",
+  "faviconPath": "public/favicon.svg",
+  "monoLogoPath": "public/logo-mono.svg",
+  "ogPath": "public/og.png",
+  "mark": "A rail with one solid block arrested on it past the midpoint. The asymmetry is the idea: more path behind than ahead, so the default resolution is forward.",
+  "source": "brand/ART-DIRECTION.md"
+}

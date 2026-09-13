@@ -1,0 +1,22 @@
+<!doctype html><meta charset=utf-8>
+<link rel=preconnect href="https://fonts.googleapis.com"><link rel=preconnect href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400&family=Spline+Sans:wght@400;500&family=Spline+Sans+Mono:wght@400&display=swap" rel=stylesheet>
+<style>
+ *{margin:0;box-sizing:border-box}
+ body{width:1200px;height:630px;background:#faf8f4;color:#17150f;position:relative;
+   font-family:'Spline Sans',system-ui,sans-serif;padding:76px 92px;overflow:hidden}
+ .top{display:flex;align-items:center;gap:14px;margin-bottom:54px}
+ .top img{width:32px;height:32px}
+ .top b{font:500 24px/1 'Spline Sans',sans-serif;letter-spacing:-.012em}
+ h1{font:400 64px/1.04 'Fraunces',Georgia,serif;letter-spacing:-.038em;max-width:16ch}
+ h1 em{font-style:normal;color:#b0431c}
+ /* the rail sits in its own reserved band beneath the headline, never across it */
+ .rail{position:absolute;left:0;right:0;top:472px;height:5px;background:#17150f}
+ .pod{position:absolute;left:64%;top:459px;width:18px;height:31px;border-radius:4.5px;background:#b0431c}
+ .foot{position:absolute;left:92px;right:92px;bottom:62px;display:flex;justify-content:space-between;
+   font-family:'Spline Sans Mono',ui-monospace,monospace;font-size:17px;color:rgba(23,21,15,.58)}
+</style>
+<div class=top><img src="../../public/logo.svg"><b>Held</b></div>
+<h1>You pay first. The money <em>waits</em> until you have read what you bought.</h1>
+<div class=rail></div><div class=pod></div>
+<div class=foot><span>heldprotocol.xyz</span><span>escrow 0.0.10495061 &middot; hedera testnet</span></div>

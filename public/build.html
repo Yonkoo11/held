@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Build · Held</title>
+<meta name="color-scheme" content="light">
+<meta name="description" content="The real 402 challenge Held returns, with payTo pointing at an escrow account rather than the seller.">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="alternate icon" href="/favicon-32.png" sizes="32x32">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta property="og:title" content="Build · Held">
+<meta property="og:description" content="The real 402 challenge Held returns, with payTo pointing at an escrow account rather than the seller.">
+<meta property="og:image" content="https://heldprotocol.xyz/og.png">
+<meta property="og:url" content="https://heldprotocol.xyz/build">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;1,9..144,400&family=Spline+Sans+Mono:wght@400;500&family=Spline+Sans:wght@400;450;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/app.css">
+</head>
+<body>
+
+<nav>
+  <a class="mark" href="/"><img src="/logo.svg" alt=""><span>Held</span></a>
+  <div class="links">
+    <a href="/ask">Ask</a>
+    <a href="/ledger">Ledger</a>
+    <a href="/proof">Proof</a>
+    <a href="/build">Build</a>
+    <a href="/invariants">Invariants</a>
+  </div>
+  <span class="where">hedera testnet &middot; escrow <b id="escrow">&hellip;</b></span>
+</nav>
+
+<section class="page doc">
+  <h1>One field does all the work.</h1>
+  <p class="standfirst">Held is an ordinary x402 resource server. A client that already speaks x402
+    needs no changes to buy from it. The only unusual thing is where <code>payTo</code> points.</p>
+
+  <h2>The challenge this server actually returns</h2>
+  <p>Ask for the resource without paying and you get a 402 with this body. It is fetched live from
+    our own <code>/work</code> below, so you are reading the real thing rather than an
+    illustration of it.</p>
+  <pre class="code" id="livequote">{
+  "x402Version": 2,
+  "error": "payment required",
+  "resource": {
+    "url": "https://heldprotocol.xyz/work",
+    "description": "Research answer from an agent. 0.05 HBAR, held in escrow until you approve it.",
+    "mimeType": "application/json"
+  },
+  "accepts": [{
+    "scheme": "exact",
+    "network": "hedera:testnet",
+    "asset": "0.0.0",
+    "amount": "5000000",
+    <b>"payTo": "0.0.10495061",</b>   <i>&lt;- the escrow account, not the seller</i>
+    "maxTimeoutSeconds": 120,
+    "extra": { "feePayer": "0.0.7162784" }
+  }],
+  "extensions": {
+    "held": {
+      "escrow": "0.0.10495061",
+      "reviewWindowMinutes": 10,
+      "releasePolicy": "approve pays the seller, reject refunds you, silence pays the seller at the deadline"
+    }
+  }
+}</pre>
+  <p id="quotenote" class="standfirst" style="font-size:13.5px">Fetching the live challenge&hellip;</p>
+
+  <h3>Why <code>payTo</code> is the whole mechanism</h3>
+  <p>In a normal x402 flow <code>payTo</code> is the seller. Settlement is final the moment the
+    facilitator verifies the payment, and the buyer has no recourse. Here it names an escrow
+    account instead. Settlement still happens immediately and irreversibly, so the seller knows the
+    money is real, but it lands somewhere neither party can unilaterally take it from.</p>
+  <p>The <code>extensions.held</code> block tells a client what happens next, in a form it can read
+    rather than one a human has to look up in documentation.</p>
+
+  <h2>Why the deferred flow could not be used instead</h2>
+  <p>The Hedera scheme declares <code>paymentFlows.default.supported</code> as
+    <code>["authorization", "upfront"]</code>, with authorization as the default, so at first glance
+    settlement can simply be deferred past the request. It cannot be deferred far enough. The Hedera
+    x402 payload is a partially-signed Hedera transaction, and those expire in minutes. A buyer
+    review window is measured in hours or days. So Held holds the money in an account rather than
+    holding a signature.</p>
+
+  <h2>The endpoints</h2>
+  <div class="rows">
+    <div class="row"><span class="k">POST /work</span><span class="v">The gated route. Send <code>{ question }</code>. Without an <code>X-PAYMENT</code> header it answers 402 with the challenge above. With a valid one it returns the deliverable, a <code>claimToken</code>, and the escrow state.<span class="why">rate limited to 20 a minute</span></span><span class="t">x402</span></div>
+    <div class="row"><span class="k">POST /jobs/:id/approve</span><span class="v">Release escrow to the seller. Requires the <code>X-Job-Token</code> issued in the payment response.<span class="why">SHA-256 of the token is stored, compared with timingSafeEqual</span></span><span class="t">buyer only</span></div>
+    <div class="row"><span class="k">POST /jobs/:id/reject</span><span class="v">Refund escrow to the buyer. Same authority check.</span><span class="t">buyer only</span></div>
+    <div class="row"><span class="k">GET /jobs/:id</span><span class="v">One job and its evidence trail, read back from the consensus topic.</span><span class="t">open</span></div>
+    <div class="row"><span class="k">GET /jobs</span><span class="v">Every job. The claim-token hash is stripped before it leaves the process.</span><span class="t">open</span></div>
+    <div class="row"><span class="k">GET /health</span><span class="v">Which tier each subsystem is running on, and whether any of them is degraded.</span><span class="t">open</span></div>
+  </div>
+
+  <h2>See the challenge yourself</h2>
+  <p>No key, no account, nothing to install:</p>
+  <pre class="code">curl -s -X POST https://heldprotocol.xyz/work \
+  -H 'content-type: application/json' \
+  -d '{"question":"what is a scheduled transaction"}' | jq .</pre>
+  <p>Then confirm the account it names is real, and is not the seller:</p>
+  <pre class="code">curl -s https://testnet.mirrornode.hedera.com/api/v1/accounts/0.0.10495061 | jq .balance</pre>
+  <p>The seller's own fee-payer account is <code>0.0.7162784</code>. They are different accounts,
+    and that difference is the product.</p>
+</section>
+
+<footer>
+  <div class="tiers" id="tiers"></div>
+  <p id="foot"></p>
+</footer>
+
+<script src="/app.js"></script>
+<script src="/build.js"></script>
+</body>
+</html>

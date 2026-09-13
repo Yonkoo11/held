@@ -6,378 +6,33 @@
 <title>Held</title>
 <meta name="color-scheme" content="light">
 <meta name="description" content="An agent service where your payment waits in escrow until you have read what you bought.">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="alternate icon" href="/favicon-32.png" sizes="32x32">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta property="og:title" content="Held">
+<meta property="og:description" content="An agent service where your payment waits in escrow until you have read what you bought.">
+<meta property="og:image" content="https://heldprotocol.xyz/og.png">
+<meta property="og:url" content="https://heldprotocol.xyz/">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;1,9..144,400&family=Spline+Sans+Mono:wght@400;500&family=Spline+Sans:wght@400;450;500&display=swap" rel="stylesheet">
-<style>
-  /* ── tokens ───────────────────────────────────────────────────────────────
-     Light-only. A payment under review is a financial record, and every other
-     tab at this event is a dark dashboard.
-
-     Decoration budget, held deliberately low (design-taste BR-c, SR-5, ER-10):
-       accent placements in the first viewport ....... 3 (clock, live wire, CTA)
-       ambient glows ................................. 0
-       texture overlays .............................. 0
-       uppercase labels in the first viewport ........ 2 (the two wire nodes)
-     Depth comes from a tinted ground (ER-1), a shadow ladder (CF-5) and
-     hairlines. Nothing here glows to look alive. The clock is alive. */
-  :root {
-    --paper:      #faf8f4;                     /* warm tint, never #fff */
-    --paper-sunk: #f1eee6;
-    --surface:    #fdfbf6;
-
-    --ink:   #17150f;
-    --ink-2: rgba(23, 21, 15, 0.64);
-    --ink-3: rgba(23, 21, 15, 0.44);
-    --ink-4: rgba(23, 21, 15, 0.24);
-
-    --rule:        rgba(23, 21, 15, 0.11);
-    --rule-strong: rgba(23, 21, 15, 0.24);
-
-    --accent:      #b0431c;                    /* one brand colour */
-    --accent-ring: rgba(176, 67, 28, 0.26);
-    --on-accent:   #fff8f5;
-
-    --paid: #2f6b43;                           /* meaning only */
-    --back: #9a3527;                           /* meaning only */
-
-    --r-sm: 4px;
-    --r-md: 9px;
-    --r-lg: 14px;
-    --r-full: 999px;
-
-    /* CF-5: soft-elevation ladder. One philosophy, no orphan blurs. */
-    --lift-1: 0 1px 2px rgba(23,21,15,.05), 0 0 0 1px rgba(23,21,15,.05);
-    --lift-2: 0 2px 4px rgba(23,21,15,.05), 0 8px 18px -8px rgba(23,21,15,.14), 0 0 0 1px rgba(23,21,15,.06);
-    --lift-3: 0 4px 9px rgba(23,21,15,.07), 0 22px 44px -16px rgba(23,21,15,.20), 0 0 0 1px rgba(23,21,15,.07);
-
-    --ease: cubic-bezier(0.23, 1, 0.32, 1);
-
-    --serif: 'Fraunces', 'Iowan Old Style', Baskerville, Georgia, serif;
-    --sans:  'Spline Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-    --mono:  'Spline Sans Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
-
-    --gut: clamp(20px, 4vw, 56px);
-  }
-
-  * { box-sizing: border-box; }
-  html { -webkit-text-size-adjust: 100%; }
-  body {
-    margin: 0;
-    background: var(--paper);
-    color: var(--ink);
-    font: 400 15px/1.6 var(--sans);
-    -webkit-font-smoothing: antialiased;
-    text-rendering: optimizeLegibility;
-    -webkit-tap-highlight-color: transparent;
-    overflow-x: hidden;
-  }
-  ::selection { background: rgba(176, 67, 28, 0.14); }
-  [hidden] { display: none !important; }
-
-  /* SR-4: mono is for metadata and data fields only. Never an eyebrow above a heading. */
-  .lab {
-    font: 500 11px/1 var(--mono);
-    letter-spacing: .16em; text-transform: uppercase; color: var(--ink-3);
-  }
-
-  /* ── nav: a data strip, not a bar ──────────────────────────────────────── */
-  nav {
-    display: flex; justify-content: space-between; align-items: baseline;
-    gap: 10px 22px; flex-wrap: wrap;
-    padding: 22px var(--gut) 0;
-  }
-  nav .mark { font: 500 14px/1 var(--sans); letter-spacing: -0.015em; }
-  nav .where { font: 400 12.5px/1.5 var(--mono); color: var(--ink-3); }
-  nav .where b { font-weight: 400; color: var(--ink-2); }
-
-  /* ── stage ─────────────────────────────────────────────────────────────── */
-  .stage {
-    min-height: 86vh;
-    display: flex; flex-direction: column; justify-content: center;
-    padding: clamp(36px, 5vw, 68px) 0 clamp(40px, 5vw, 64px);
-  }
-
-  .lede { padding: 0 var(--gut); }
-  /* ER-3: display type is regular weight, leading under 1.0, real negative tracking.
-     SR-2: 68px against 15px body is a 4.5x ratio. */
-  .lede h1 {
-    /* ch resolves against this element's own size, so the measure has to live here.
-       At 68px, 15ch is about 500px: four display lines, the way KNOT sets a headline. */
-    margin: 0; max-width: 15ch;
-    font: 400 clamp(36px, 5.4vw, 68px)/0.98 var(--serif);
-    letter-spacing: -0.042em;
-  }
-  .lede h1 em { font-style: italic; }          /* ER-4: italic alone, no colour */
-  .lede p {
-    margin: 24px 0 0; max-width: 52ch;
-    font: 400 clamp(15px, 1.3vw, 16.5px)/1.68 var(--sans); color: var(--ink-2);
-  }
-  .lede p b { color: var(--ink); font-weight: 500; }
-
-  /* ── the wire. The mechanism is the layout. ────────────────────────────── */
-  /* The pod is centred on a 2px rail, so it extends ~80px above and below it and reserves no
-     height of its own. Without this the paragraph above and the prose below both collide with it. */
-  .wire {
-    position: relative; margin-top: clamp(44px, 5.5vw, 72px); padding: 0 var(--gut);
-    min-height: 184px; display: flex; align-items: center;
-  }
-  .rail { position: relative; width: 100%; height: 2px; }
-  .rail::after {
-    content: ''; position: absolute; left: 0; right: 0; top: 0; height: 2px; border-radius: 2px;
-    background: linear-gradient(90deg, transparent, var(--rule-strong) 6%, var(--rule-strong) 94%, transparent);
-  }
-  .seg {
-    position: absolute; top: 0; left: 4%; right: 50.4%; height: 2px; border-radius: 2px;
-    background: var(--accent); opacity: 0;
-    transition: opacity 320ms var(--ease);
-  }
-  .wire[data-live="true"] .seg { opacity: 1; }
-
-  .node { position: absolute; top: 1px; transform: translateY(-50%); }
-  .node i {
-    display: block; width: 10px; height: 10px; border-radius: var(--r-full);
-    background: var(--paper-sunk);
-    box-shadow: 0 0 0 1px var(--rule-strong), 0 0 0 7px var(--paper);
-  }
-  .node b {
-    position: absolute; top: 24px; white-space: nowrap;
-    font: 500 11px/1 var(--mono); letter-spacing: .16em; text-transform: uppercase;
-    color: var(--ink-3);
-  }
-  .n-you  { left: 4%; }   .n-you b  { left: 0; }
-  .n-them { right: 4%; }  .n-them b { right: 0; }
-  .wire[data-live="true"] .n-you i {
-    background: var(--accent); box-shadow: 0 0 0 1px var(--accent), 0 0 0 7px var(--paper);
-  }
-
-  /* the signature element: the payment, parked mid-wire. No glow. Elevation only. */
-  .pod {
-    position: absolute; left: 50%; top: 1px; transform: translate(-50%, -50%); z-index: 2;
-    min-width: min(340px, 82vw); text-align: center;
-    padding: 20px 28px 18px;
-    background: var(--surface); border-radius: var(--r-lg);
-    box-shadow: var(--lift-3);
-  }
-  .pod .cap { font: 400 11.5px/1 var(--mono); letter-spacing: .04em; color: var(--ink-3); }
-  .pod .fig {
-    margin-top: 14px;
-    font: 400 clamp(38px, 4.8vw, 54px)/1 var(--mono);
-    letter-spacing: -0.05em; font-variant-numeric: tabular-nums;
-  }
-  .pod .fig .u { font-size: .34em; letter-spacing: .02em; color: var(--ink-3); margin-left: .45em; }
-  .pod .clk {
-    margin-top: 16px; padding-top: 15px; border-top: 1px solid var(--rule);
-    display: flex; justify-content: center; align-items: baseline; gap: 10px; flex-wrap: wrap;
-  }
-  .pod .clk .t {
-    font: 500 21px/1 var(--mono); letter-spacing: -0.02em; color: var(--accent);
-    font-variant-numeric: tabular-nums;
-  }
-  .pod .clk .c { font: 400 13px/1.35 var(--sans); color: var(--ink-3); }
-
-  /* ── what happens next: prose in a column, not three cards ─────────────── */
-  .next {
-    margin: clamp(58px, 7.5vw, 108px) 0 0; padding: 0 var(--gut);
-    display: grid; grid-template-columns: minmax(0, 34rem) minmax(0, 1fr);
-    gap: 0 clamp(24px, 4vw, 64px);
-  }
-  .next p {
-    grid-column: 1; margin: 0;
-    font: 400 clamp(16px, 1.5vw, 18.5px)/1.6 var(--sans); color: var(--ink-2);
-  }
-  .next p b { color: var(--ink); font-weight: 500; }
-  .next p + p { margin-top: 16px; }
-
-  /* ── the ask ───────────────────────────────────────────────────────────── */
-  .deal { padding: clamp(50px, 6.5vw, 88px) var(--gut) clamp(52px, 6.5vw, 84px); }
-  .deal .box {
-    max-width: 62rem; padding: clamp(20px, 2.4vw, 28px);
-    background: var(--surface); border-radius: var(--r-lg); box-shadow: var(--lift-2);
-  }
-  .deal label { display: block; margin-bottom: 11px; }
-  .deal textarea {
-    width: 100%; min-height: 92px; resize: vertical;
-    background: var(--paper); border: 0; border-radius: var(--r-md);
-    padding: 15px 16px; color: var(--ink);
-    font: 400 16px/1.55 var(--sans);           /* 16px: no iOS zoom */
-    box-shadow: inset 0 0 0 1px var(--rule), inset 0 1px 2px rgba(23,21,15,.04);
-    transition: box-shadow 180ms var(--ease);
-  }
-  .deal textarea::placeholder { color: var(--ink-3); }
-  .deal textarea:focus {
-    outline: 0; box-shadow: inset 0 0 0 1px var(--accent), 0 0 0 3px var(--accent-ring);
-  }
-  .askrow { margin-top: 15px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
-  /* ER-8: the limitation sits beside the button, not buried in a footer. */
-  .caveat { font: 400 13.5px/1.5 var(--sans); color: var(--ink-3); max-width: 44ch; }
-
-  button {
-    font-family: var(--sans); cursor: pointer; border: 0;
-    transition: transform 160ms var(--ease), box-shadow 160ms var(--ease), background 160ms var(--ease);
-  }
-  button:focus-visible { outline: 0; box-shadow: 0 0 0 3px var(--accent-ring); }
-  button:disabled { cursor: not-allowed; opacity: .55; transform: none; }
-
-  .primary {
-    background: var(--accent); color: var(--on-accent);
-    border-radius: var(--r-md); padding: 0 22px; min-height: 48px;
-    font-size: 14.5px; font-weight: 500; letter-spacing: -0.005em;
-    box-shadow: 0 1px 2px rgba(23,21,15,.16), 0 8px 18px -10px rgba(23,21,15,.5);
-  }
-  @media (hover: hover) {
-    .primary:not(:disabled):hover {
-      transform: translateY(-1px);
-      box-shadow: 0 3px 6px rgba(23,21,15,.18), 0 14px 26px -10px rgba(23,21,15,.55);
-    }
-  }
-  .primary:not(:disabled):active { transform: translateY(0) scale(.97); transition-duration: 80ms; }
-
-  .err {
-    margin-top: 15px; padding: 12px 14px; border-radius: var(--r-md);
-    background: rgba(154,53,39,.07); color: var(--back);
-    font: 400 13.5px/1.5 var(--sans);
-    box-shadow: inset 0 0 0 1px rgba(154,53,39,.18);
-  }
-
-  /* ── the register: SR-1 hairline rows, SR-3 right-aligned second edge ──── */
-  .register { padding: 0 var(--gut) clamp(40px, 5vw, 64px); }
-  .reghead {
-    display: flex; justify-content: space-between; align-items: baseline; gap: 16px;
-    padding-bottom: 14px; border-bottom: 2px solid var(--ink);
-  }
-
-  .row {
-    display: grid; grid-template-columns: 3.2rem minmax(0, 1fr) 13.5rem;
-    gap: 0 clamp(18px, 2.4vw, 34px);
-    padding: 27px 0; border-bottom: 1px solid var(--rule);
-  }
-  .no { font: 400 13px/1.7 var(--mono); color: var(--ink-4); font-variant-numeric: tabular-nums; }
-  .q { font: 500 19px/1.36 var(--serif); letter-spacing: -0.014em; }
-  .deliverable { margin-top: 12px; color: var(--ink-2); max-width: 64ch; }
-  .deliverable p { margin: 0 0 .52em; font: 400 15px/1.66 var(--sans); }
-  .deliverable p:last-child { margin-bottom: 0; }
-  .deliverable strong { color: var(--ink); font-weight: 500; }
-  .deliverable code {
-    font: 400 13.5px/1 var(--mono); background: var(--paper-sunk);
-    padding: 2px 5px; border-radius: var(--r-sm);
-  }
-  .deliverable.clamped {
-    display: -webkit-box; -webkit-line-clamp: 6; -webkit-box-orient: vertical; overflow: hidden;
-  }
-  .more {
-    margin-top: 10px; background: none; padding: 5px 0; min-height: 32px;
-    font: 400 13.5px/1 var(--sans); color: var(--ink-2);
-    border-bottom: 1px solid var(--rule-strong);
-  }
-  @media (hover: hover) { .more:hover { color: var(--ink); border-bottom-color: var(--ink); } }
-  .byline {
-    margin-top: 15px; font: 400 12.5px/1.55 var(--mono); color: var(--ink-3);
-    overflow-wrap: anywhere;
-  }
-  .outcome {
-    margin-top: 11px; font: 400 12.5px/1.55 var(--mono); color: var(--ink-3);
-    overflow-wrap: anywhere;
-  }
-  .trail { margin-top: 11px; display: flex; gap: 7px 16px; flex-wrap: wrap; }
-  .trail span { font: 400 12px/1.5 var(--mono); color: var(--ink-4); }
-  .trail b { font-weight: 500; color: var(--ink-3); }
-
-  .edge { text-align: right; }
-  .amt { font: 400 17px/1 var(--mono); letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
-  .state {
-    display: block; margin-top: 10px;
-    font: 500 11px/1 var(--mono); letter-spacing: .16em; text-transform: uppercase;
-  }
-  .state[data-s="held"]     { color: var(--accent); }
-  .state[data-s="released"] { color: var(--paid); }
-  .state[data-s="refunded"] { color: var(--back); }
-  .clock { margin-top: 15px; }
-  .clock .t {
-    font: 500 26px/1 var(--mono); letter-spacing: -0.03em; color: var(--accent);
-    font-variant-numeric: tabular-nums;
-  }
-  .clock .c { margin-top: 6px; font: 400 12.5px/1.35 var(--sans); color: var(--ink-3); }
-
-  /* ER-9: one filled action. The second is a quiet text link, never a second button. */
-  .decide { margin-top: 17px; display: flex; flex-direction: column; align-items: flex-end; gap: 11px; }
-  .decide .go {
-    background: var(--ink); color: var(--paper);
-    border-radius: var(--r-md); padding: 0 16px; min-height: 44px; width: 100%;
-    font-size: 13.5px; font-weight: 500;
-    box-shadow: 0 1px 2px rgba(23,21,15,.16), 0 6px 14px -8px rgba(23,21,15,.5);
-  }
-  @media (hover: hover) {
-    .decide .go:not(:disabled):hover {
-      transform: translateY(-1px);
-      box-shadow: 0 3px 6px rgba(23,21,15,.18), 0 12px 22px -8px rgba(23,21,15,.55);
-    }
-  }
-  .decide .go:not(:disabled):active { transform: translateY(0) scale(.97); transition-duration: 80ms; }
-  .decide .quiet {
-    background: none; padding: 6px 0; min-height: 32px;
-    font: 400 13px/1 var(--sans); color: var(--ink-3);
-    border-bottom: 1px solid var(--rule-strong);
-  }
-  @media (hover: hover) {
-    .decide .quiet:not(:disabled):hover { color: var(--ink); border-bottom-color: var(--ink); }
-  }
-
-  .empty {
-    margin: 0; padding: 40px 0 4px; max-width: 42ch;
-    font: 400 15.5px/1.62 var(--sans); color: var(--ink-3);
-  }
-
-  /* ── footer: sunk strip, a different treatment again ───────────────────── */
-  footer {
-    margin-top: clamp(30px, 4vw, 52px); padding: 30px var(--gut) 44px;
-    background: var(--paper-sunk); box-shadow: inset 0 1px 0 var(--rule);
-  }
-  .tiers { display: flex; gap: 8px; flex-wrap: wrap; }
-  .chip {
-    padding: 7px 11px; border-radius: var(--r-full);
-    background: var(--surface); box-shadow: var(--lift-1);
-    font: 400 12.5px/1 var(--mono); color: var(--ink-2);
-  }
-  .chip[data-degraded="true"] { color: var(--ink-3); background: transparent; box-shadow: inset 0 0 0 1px var(--rule); }
-  footer p { margin: 16px 0 0; font: 400 12px/1.7 var(--mono); color: var(--ink-4); overflow-wrap: anywhere; }
-
-  /* ── responsive ───────────────────────────────────────────────────────── */
-  @media (max-width: 980px) { .next { grid-template-columns: minmax(0, 1fr); } }
-  @media (max-width: 900px) {
-    .row { grid-template-columns: 2.6rem minmax(0, 1fr); }
-    .edge { grid-column: 2; text-align: left; margin-top: 17px;
-            padding-top: 15px; border-top: 1px solid var(--rule); }
-    .decide { flex-direction: row; align-items: center; gap: 16px; }
-    .decide .go { width: auto; padding: 0 20px; }
-    .clock .t { font-size: 22px; }
-  }
-  @media (max-width: 700px) {
-    .stage { min-height: 0; padding-top: 30px; }
-    .wire { margin-top: 40px; min-height: 0; display: block; }
-    .rail { height: auto; }
-    .seg { right: 50%; }
-    .pod { position: relative; left: auto; top: auto; transform: none;
-           margin: 46px auto 0; width: 100%; min-width: 0; }
-    /* the pod drops into the flow here, so the node labels move above the line
-       rather than sitting underneath it where the pod covers them */
-    .node b { top: -17px; font-size: 10px; letter-spacing: .13em; }
-    .row { grid-template-columns: minmax(0, 1fr); }
-    .no { margin-bottom: 8px; }
-    .edge { grid-column: 1; }
-  }
-  @media (prefers-reduced-motion: reduce) {
-    *, *::before, *::after { animation: none !important; transition-duration: 1ms !important; }
-  }
-</style>
+<link rel="stylesheet" href="/app.css">
 </head>
 <body>
 
 <nav>
-  <span class="mark">Held</span>
-  <span class="where">hedera testnet · x402 via Blocky402 · escrow <b id="escrow">…</b></span>
+  <a class="mark" href="/"><img src="/logo.svg" alt=""><span>Held</span></a>
+  <div class="links">
+    <a href="/ask">Ask</a>
+    <a href="/ledger">Ledger</a>
+    <a href="/proof">Proof</a>
+    <a href="/build">Build</a>
+    <a href="/invariants">Invariants</a>
+  </div>
+  <span class="where">hedera testnet &middot; escrow <b id="escrow">&hellip;</b></span>
 </nav>
-
 <header class="stage">
   <div class="lede">
     <h1>You pay first. The money <em>waits</em> until you have read what you bought.</h1>
@@ -410,24 +65,30 @@
   </div>
 </header>
 
-<section class="deal">
-  <div class="box">
-    <label class="lab" for="q">Ask the agent something</label>
-    <textarea id="q" placeholder="What is a Hedera scheduled transaction and when does it execute?"></textarea>
-    <div class="askrow">
-      <button class="primary" id="go">Pay and ask</button>
-      <span class="caveat" id="caveat"></span>
-    </div>
-    <div class="err" id="err" hidden></div>
+<section class="page">
+  <h2 class="lab">Where to look</h2>
+  <div class="rows" style="margin-top:14px">
+    <a class="row entry" href="/ask">
+      <span class="k">/ask</span>
+      <span class="v">Buy an answer for 0.05 HBAR and watch the payment sit in escrow with a clock on it.</span>
+      <span class="t">the product</span>
+    </a>
+    <a class="row entry" href="/proof">
+      <span class="k">/proof</span>
+      <span class="v">The escrow account and the consensus topic, read live from Hedera's mirror node in your browser.</span>
+      <span class="t">verify it yourself</span>
+    </a>
+    <a class="row entry" href="/build">
+      <span class="k">/build</span>
+      <span class="v">The real 402 challenge this server returns, with <code>payTo</code> pointing at escrow rather than the seller.</span>
+      <span class="t">integrate</span>
+    </a>
+    <a class="row entry" href="/invariants">
+      <span class="k">/invariants</span>
+      <span class="v">Thirteen properties the money depends on, how each is enforced, and the two that broke.</span>
+      <span class="t">what can go wrong</span>
+    </a>
   </div>
-</section>
-
-<section class="register">
-  <div class="reghead">
-    <span class="lab">What you bought</span>
-    <span class="lab" id="count"></span>
-  </div>
-  <div id="jobs"><p class="empty">You have not bought anything yet. Ask the agent a question and it turns up here with a clock on it.</p></div>
 </section>
 
 <footer>
@@ -435,248 +96,6 @@
   <p id="foot"></p>
 </footer>
 
-<script>
-const $ = (id) => document.getElementById(id);
-
-/* The claim token proves you are the buyer for a job. It is shown once, so the page keeps it.
-   Per-browser only: open this elsewhere and you cannot decide on these jobs, which is the point. */
-const TOKENS = 'held.tokens';
-const readTokens = () => { try { return JSON.parse(localStorage.getItem(TOKENS) || '{}'); } catch { return {}; } };
-function saveToken(jobId, token) {
-  try { const t = readTokens(); t[jobId] = token; localStorage.setItem(TOKENS, JSON.stringify(t)); } catch {}
-}
-
-/* Everything below builds DOM nodes and sets textContent. Nothing concatenates HTML, because the
-   question comes from a user and the deliverable comes from a model: both are attacker controlled. */
-function el(tag, props = {}, children = []) {
-  const n = document.createElement(tag);
-  for (const [k, v] of Object.entries(props)) {
-    if (v === undefined || v === null) continue;
-    if (k === 'class') n.className = v;
-    else if (k === 'text') n.textContent = v;
-    else if (k.startsWith('data-')) n.setAttribute(k, v);
-    else n[k] = v;
-  }
-  for (const c of [].concat(children)) if (c) n.appendChild(c);
-  return n;
-}
-const clear = (n) => { while (n.firstChild) n.removeChild(n.firstChild); };
-
-/* Models still emit **bold** and *italic* even when told not to. Render those as real nodes rather
-   than showing the asterisks, and still never touch innerHTML, so the text stays inert. */
-function prose(text) {
-  const frag = document.createDocumentFragment();
-  for (const line of String(text || '').split('\n')) {
-    const p = el('p');
-    const clean = line.replace(/^\s*(?:[-*•]|\d+\.)\s+/, '');
-    const re = /\*\*([^*]+)\*\*|\*([^*]+)\*|`([^`]+)`/g;
-    let last = 0, m;
-    while ((m = re.exec(clean)) !== null) {
-      if (m.index > last) p.appendChild(document.createTextNode(clean.slice(last, m.index)));
-      if (m[1] !== undefined) p.appendChild(el('strong', { text: m[1] }));
-      else if (m[2] !== undefined) p.appendChild(el('em', { text: m[2] }));
-      else p.appendChild(el('code', { text: m[3] }));
-      last = re.lastIndex;
-    }
-    if (last < clean.length) p.appendChild(document.createTextNode(clean.slice(last)));
-    if (p.textContent.trim()) frag.appendChild(p);
-  }
-  return frag;
-}
-
-async function loadHealth() {
-  const h = await (await fetch('/health')).json();
-  const live = !h.tiers.settlement.degraded;
-  $('escrow').textContent = h.escrow;
-  $('escrow2').textContent = h.escrow;
-  $('price').textContent = h.price;
-  $('unit').textContent = h.asset.symbol;
-  $('caveat').textContent = live
-    ? `${h.price} ${h.asset.symbol} a question, settled on Hedera testnet. Real transactions on a public network, paid with test funds.`
-    : `${h.price} ${h.asset.symbol} a question. Running on the local stand-in, so none of this reaches Hedera.`;
-  const box = $('tiers');
-  clear(box);
-  for (const [k, v] of Object.entries(h.tiers || {})) {
-    box.appendChild(el('span', { class: 'chip', 'data-degraded': String(v.degraded), text: `${k} · ${v.label}` }));
-  }
-  $('foot').textContent =
-    `facilitator ${h.facilitator} · fee payer ${h.feePayer} · evidence ${h.evidenceTopic} · agent ${h.agent.id}`;
-}
-
-function countdown(ms) {
-  if (ms <= 0) return 'releasing';
-  const m = Math.floor(ms / 60000), s = Math.floor((ms % 60000) / 1000);
-  return `${m}:${String(s).padStart(2, '0')}`;
-}
-
-/* The wire reads off the soonest open job. With nothing held it still draws, because the diagram is
-   the explanation and must not depend on there being a payment in flight. */
-let soonestDeadline = null;
-function paintWire() {
-  const resting = soonestDeadline === null;
-  $('wire').dataset.live = String(!resting);
-  $('wclock').hidden = resting;
-  $('wnote').textContent = resting ? 'per request, nothing in flight yet' : 'until the seller gets paid';
-  if (!resting) $('wclock').textContent = countdown(soonestDeadline - Date.now());
-}
-
-/* Expanded deliverables survive the poll. Before this, the six-second refresh silently collapsed a
-   long answer the reader had opened, which looked like the page fighting them. */
-const expanded = new Set();
-
-function jobNode(j, entryNo) {
-  const mine = Boolean(readTokens()[j.id]);
-  const held = j.state === 'held';
-
-  const edgeParts = [
-    el('div', { class: 'amt', text: `${j.amountDisplay} ${j.assetSymbol || ''}`.trim() }),
-    el('span', { class: 'state', 'data-s': j.state, text: j.state }),
-  ];
-  if (held) {
-    edgeParts.push(el('div', { class: 'clock', 'data-deadline': String(j.deadline) }, [
-      el('div', { class: 't', text: countdown(j.deadline - Date.now()) }),
-      el('div', { class: 'c', text: 'left for you to decide' }),
-    ]));
-  }
-  if (held && mine) {
-    edgeParts.push(el('div', { class: 'decide' }, [
-      el('button', { class: 'go', 'data-act': 'approve', 'data-id': j.id, text: 'Pay the seller' }),
-      el('button', { class: 'quiet', 'data-act': 'reject', 'data-id': j.id, text: 'Refund me instead' }),
-    ]));
-  }
-
-  const bodyParts = [el('div', { class: 'q', text: j.question })];
-  const d = el('div', { class: 'deliverable' });
-  d.appendChild(prose(j.deliverable));
-  if ((j.deliverable || '').length > 620) {
-    const open = expanded.has(j.id);
-    if (!open) d.classList.add('clamped');
-    const more = el('button', { class: 'more', type: 'button', text: open ? 'Show less' : 'Read all' });
-    more.addEventListener('click', () => {
-      const nowClamped = d.classList.toggle('clamped');
-      if (nowClamped) expanded.delete(j.id); else expanded.add(j.id);
-      more.textContent = nowClamped ? 'Read all' : 'Show less';
-    });
-    bodyParts.push(d, more);
-  } else {
-    bodyParts.push(d);
-  }
-  bodyParts.push(el('div', {
-    class: 'byline',
-    text: [j.workerTier, j.model, j.agentVersion].filter((x) => x && x !== 'none').join(' · '),
-  }));
-
-  if (!held) {
-    // The reason and the transaction id are the record of this entry, so they read at full width
-    // here rather than wrapping a Hedera id mid-token in the narrow ledger column.
-    const tail = [j.decisionReason, j.decisionTx].filter(Boolean).join('  ·  ');
-    if (tail) bodyParts.push(el('div', { class: 'outcome', text: tail }));
-  } else if (!mine) {
-    bodyParts.push(el('div', { class: 'outcome', text: 'someone paid for this in another browser, so only they can approve or refund it' }));
-  }
-
-  const trail = el('div', { class: 'trail' });
-  for (const e of j.evidence || []) {
-    trail.appendChild(el('span', {}, [
-      el('b', { text: e.type }),
-      document.createTextNode(' ' + new Date(e.at).toLocaleTimeString()),
-    ]));
-  }
-  bodyParts.push(trail);
-
-  return el('div', { class: 'row' }, [
-    el('div', { class: 'no', text: String(entryNo).padStart(3, '0') }),
-    el('div', {}, bodyParts),
-    el('div', { class: 'edge' }, edgeParts),
-  ]);
-}
-
-/* Rebuilding the list every six seconds threw away scroll position and any open answer, so only
-   rebuild when something a reader can actually see has changed. */
-let lastSignature = '';
-
-async function loadJobs() {
-  const list = await (await fetch('/jobs')).json();
-  const box = $('jobs');
-  const open = list.filter((j) => j.state === 'held').length;
-  $('count').textContent = list.length
-    ? `${list.length} ${list.length === 1 ? 'entry' : 'entries'} · ${open} open`
-    : '';
-  if (!list.length) {
-    soonestDeadline = null; paintWire();
-    if (lastSignature !== 'empty') {
-      lastSignature = 'empty';
-      clear(box);
-      box.appendChild(el('p', { class: 'empty', text: 'You have not bought anything yet. Ask the agent a question and it turns up here with a clock on it.' }));
-    }
-    return;
-  }
-  const shown = list.slice(0, 8);
-  const full = await Promise.all(shown.map((j) => fetch(`/jobs/${encodeURIComponent(j.id)}`).then((r) => r.json())));
-
-  const deadlines = full.filter((j) => j.state === 'held').map((j) => j.deadline);
-  soonestDeadline = deadlines.length ? Math.min(...deadlines) : null;
-  paintWire();
-
-  const signature = full.map((j) => `${j.id}:${j.state}:${j.decisionTx || ''}:${(j.evidence || []).length}`).join('|');
-  if (signature === lastSignature) return;
-  lastSignature = signature;
-
-  clear(box);
-  full.forEach((j, i) => box.appendChild(jobNode(j, list.length - i)));
-}
-
-$('go').addEventListener('click', async () => {
-  const question = $('q').value.trim();
-  if (!question) { $('q').focus(); return; }
-  const btn = $('go');
-  btn.disabled = true; btn.textContent = 'Settling on Hedera…'; $('err').hidden = true;
-  try {
-    const r = await fetch('/demo/buy', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ question }),
-    });
-    const b = await r.json();
-    if (!r.ok) throw new Error(b.error || `failed (${r.status})`);
-    if (b.claimToken) saveToken(b.jobId, b.claimToken);
-    $('q').value = '';
-    await loadJobs();
-  } catch (e) {
-    $('err').textContent = e.message; $('err').hidden = false;
-  } finally {
-    btn.disabled = false; btn.textContent = 'Pay and ask';
-  }
-});
-
-$('jobs').addEventListener('click', async (ev) => {
-  const b = ev.target.closest('button[data-act]');
-  if (!b) return;
-  const was = b.textContent;
-  b.disabled = true;
-  b.textContent = b.dataset.act === 'approve' ? 'Paying the seller…' : 'Refunding…';
-  const res = await fetch(`/jobs/${encodeURIComponent(b.dataset.id)}/${b.dataset.act}`, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json', 'X-Job-Token': readTokens()[b.dataset.id] || '' },
-    body: JSON.stringify({ reason: b.dataset.act === 'approve' ? 'looks right' : 'not what I asked for' }),
-  });
-  if (!res.ok) {
-    const e = await res.json().catch(() => ({}));
-    $('err').textContent = e.error || `could not ${b.dataset.act}`; $('err').hidden = false;
-    b.disabled = false; b.textContent = was;
-  }
-  await loadJobs();
-});
-
-setInterval(() => {
-  document.querySelectorAll('.clock[data-deadline]').forEach((c) => {
-    const t = c.querySelector('.t');
-    if (t) t.textContent = countdown(Number(c.dataset.deadline) - Date.now());
-  });
-  if (soonestDeadline !== null) $('wclock').textContent = countdown(soonestDeadline - Date.now());
-}, 1000);
-setInterval(loadJobs, 6000);
-
-loadHealth().then(loadJobs);
-</script>
+<script src="/app.js"></script>
 </body>
 </html>

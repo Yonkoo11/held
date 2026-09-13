@@ -1,0 +1,523 @@
+  /* ── tokens ───────────────────────────────────────────────────────────────
+     Light-only. A payment under review is a financial record, and every other
+     tab at this event is a dark dashboard.
+
+     Decoration budget, held deliberately low (design-taste BR-c, SR-5, ER-10):
+       accent placements in the first viewport ....... 3 (clock, live wire, CTA)
+       ambient glows ................................. 0
+       texture overlays .............................. 0
+       uppercase labels in the first viewport ........ 2 (the two wire nodes)
+     Depth comes from a tinted ground (ER-1), a shadow ladder (CF-5) and
+     hairlines. Nothing here glows to look alive. The clock is alive. */
+  :root {
+    --paper:      #faf8f4;                     /* warm tint, never #fff */
+    --paper-sunk: #f1eee6;
+    --surface:    #fdfbf6;
+
+    --ink:   #17150f;
+    --ink-2: rgba(23, 21, 15, 0.64);
+    --ink-3: rgba(23, 21, 15, 0.44);
+    --ink-4: rgba(23, 21, 15, 0.24);
+
+    --rule:        rgba(23, 21, 15, 0.11);
+    --rule-strong: rgba(23, 21, 15, 0.24);
+
+    --accent:      #b0431c;                    /* one brand colour */
+    --accent-ring: rgba(176, 67, 28, 0.26);
+    --on-accent:   #fff8f5;
+
+    --paid: #2f6b43;                           /* meaning only */
+    --back: #9a3527;                           /* meaning only */
+
+    --r-sm: 4px;
+    --r-md: 9px;
+    --r-lg: 14px;
+    --r-full: 999px;
+
+    /* CF-5: soft-elevation ladder. One philosophy, no orphan blurs. */
+    --lift-1: 0 1px 2px rgba(23,21,15,.05), 0 0 0 1px rgba(23,21,15,.05);
+    --lift-2: 0 2px 4px rgba(23,21,15,.05), 0 8px 18px -8px rgba(23,21,15,.14), 0 0 0 1px rgba(23,21,15,.06);
+    --lift-3: 0 4px 9px rgba(23,21,15,.07), 0 22px 44px -16px rgba(23,21,15,.20), 0 0 0 1px rgba(23,21,15,.07);
+
+    --ease: cubic-bezier(0.23, 1, 0.32, 1);
+
+    --serif: 'Fraunces', 'Iowan Old Style', Baskerville, Georgia, serif;
+    --sans:  'Spline Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    --mono:  'Spline Sans Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+
+    --gut: clamp(20px, 4vw, 56px);
+  }
+
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font: 400 15px/1.6 var(--sans);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    -webkit-tap-highlight-color: transparent;
+    overflow-x: hidden;
+  }
+  ::selection { background: rgba(176, 67, 28, 0.14); }
+  [hidden] { display: none !important; }
+
+  /* SR-4: mono is for metadata and data fields only. Never an eyebrow above a heading. */
+  .lab {
+    font: 500 12px/1 var(--mono);
+    letter-spacing: .16em; text-transform: uppercase; color: var(--ink-3);
+  }
+
+  /* ── nav: a data strip, not a bar ──────────────────────────────────────── */
+  nav {
+    display: flex; justify-content: space-between; align-items: baseline;
+    gap: 10px 22px; flex-wrap: wrap;
+    padding: 22px var(--gut) 0;
+  }
+  nav .mark { font: 500 14px/1 var(--sans); letter-spacing: -0.015em; }
+  nav .where { font: 400 12.5px/1.5 var(--mono); color: var(--ink-3); }
+  nav .where b { font-weight: 400; color: var(--ink-2); }
+
+  /* ── stage ─────────────────────────────────────────────────────────────── */
+  .stage {
+    min-height: 86vh;
+    display: flex; flex-direction: column; justify-content: center;
+    padding: clamp(36px, 5vw, 68px) 0 clamp(40px, 5vw, 64px);
+  }
+
+  .lede { padding: 0 var(--gut); }
+  /* ER-3: display type is regular weight, leading under 1.0, real negative tracking.
+     SR-2: 68px against 15px body is a 4.5x ratio. */
+  .lede h1 {
+    /* ch resolves against this element's own size, so the measure has to live here.
+       At 68px, 15ch is about 500px: four display lines, the way KNOT sets a headline. */
+    margin: 0; max-width: 15ch;
+    font: 400 clamp(36px, 5.4vw, 68px)/0.98 var(--serif);
+    letter-spacing: -0.042em;
+  }
+  .lede h1 em { font-style: italic; }          /* ER-4: italic alone, no colour */
+  .lede p {
+    margin: 24px 0 0; max-width: 52ch;
+    font: 400 clamp(15px, 1.3vw, 16.5px)/1.68 var(--sans); color: var(--ink-2);
+  }
+  .lede p b { color: var(--ink); font-weight: 500; }
+
+  /* ── the wire. The mechanism is the layout. ────────────────────────────── */
+  /* The pod is centred on a 2px rail, so it extends ~80px above and below it and reserves no
+     height of its own. Without this the paragraph above and the prose below both collide with it. */
+  .wire {
+    position: relative; margin-top: clamp(44px, 5.5vw, 72px); padding: 0 var(--gut);
+    min-height: 184px; display: flex; align-items: center;
+  }
+  .rail { position: relative; width: 100%; height: 2px; }
+  .rail::after {
+    content: ''; position: absolute; left: 0; right: 0; top: 0; height: 2px; border-radius: 2px;
+    background: linear-gradient(90deg, transparent, var(--rule-strong) 6%, var(--rule-strong) 94%, transparent);
+  }
+  .seg {
+    position: absolute; top: 0; left: 4%; right: 50.4%; height: 2px; border-radius: 2px;
+    background: var(--accent); opacity: 0;
+    transition: opacity 320ms var(--ease);
+  }
+  .wire[data-live="true"] .seg { opacity: 1; }
+
+  .node { position: absolute; top: 1px; transform: translateY(-50%); }
+  .node i {
+    display: block; width: 10px; height: 10px; border-radius: var(--r-full);
+    background: var(--paper-sunk);
+    box-shadow: 0 0 0 1px var(--rule-strong), 0 0 0 7px var(--paper);
+  }
+  .node b {
+    position: absolute; top: 24px; white-space: nowrap;
+    font: 500 12px/1 var(--mono); letter-spacing: .16em; text-transform: uppercase;
+    color: var(--ink-3);
+  }
+  .n-you  { left: 4%; }   .n-you b  { left: 0; }
+  .n-them { right: 4%; }  .n-them b { right: 0; }
+  .wire[data-live="true"] .n-you i {
+    background: var(--accent); box-shadow: 0 0 0 1px var(--accent), 0 0 0 7px var(--paper);
+  }
+
+  /* the signature element: the payment, parked mid-wire. No glow. Elevation only. */
+  .pod {
+    position: absolute; left: 50%; top: 1px; transform: translate(-50%, -50%); z-index: 2;
+    min-width: min(340px, 82vw); text-align: center;
+    padding: 20px 28px 18px;
+    background: var(--surface); border-radius: var(--r-lg);
+    box-shadow: var(--lift-3);
+  }
+  /* 12px is the floor, and below 14px it is only allowed for a tracked label, so the tracking
+     here is load-bearing rather than decorative. */
+  .pod .cap { font: 400 12px/1 var(--mono); letter-spacing: .07em; color: var(--ink-3); }
+  .pod .fig {
+    margin-top: 14px;
+    font: 400 clamp(38px, 4.8vw, 54px)/1 var(--mono);
+    letter-spacing: -0.05em; font-variant-numeric: tabular-nums;
+  }
+  .pod .fig .u { font-size: .34em; letter-spacing: .02em; color: var(--ink-3); margin-left: .45em; }
+  .pod .clk {
+    margin-top: 16px; padding-top: 15px; border-top: 1px solid var(--rule);
+    display: flex; justify-content: center; align-items: baseline; gap: 10px; flex-wrap: wrap;
+  }
+  .pod .clk .t {
+    font: 500 21px/1 var(--mono); letter-spacing: -0.02em; color: var(--accent);
+    font-variant-numeric: tabular-nums;
+  }
+  .pod .clk .c { font: 400 13px/1.35 var(--sans); color: var(--ink-3); }
+
+  /* ── what happens next: prose in a column, not three cards ─────────────── */
+  .next {
+    margin: clamp(58px, 7.5vw, 108px) 0 0; padding: 0 var(--gut);
+    display: grid; grid-template-columns: minmax(0, 34rem) minmax(0, 1fr);
+    gap: 0 clamp(24px, 4vw, 64px);
+  }
+  .next p {
+    grid-column: 1; margin: 0;
+    font: 400 clamp(16px, 1.5vw, 18.5px)/1.6 var(--sans); color: var(--ink-2);
+  }
+  .next p b { color: var(--ink); font-weight: 500; }
+  .next p + p { margin-top: 16px; }
+
+  /* ── the ask ───────────────────────────────────────────────────────────── */
+  .deal { padding: clamp(50px, 6.5vw, 88px) var(--gut) clamp(52px, 6.5vw, 84px); }
+  .deal .box {
+    max-width: 62rem; padding: clamp(20px, 2.4vw, 28px);
+    background: var(--surface); border-radius: var(--r-lg); box-shadow: var(--lift-2);
+  }
+  .deal label { display: block; margin-bottom: 11px; }
+  .deal textarea {
+    width: 100%; min-height: 92px; resize: vertical;
+    background: var(--paper); border: 0; border-radius: var(--r-md);
+    padding: 15px 16px; color: var(--ink);
+    font: 400 16px/1.55 var(--sans);           /* 16px: no iOS zoom */
+    box-shadow: inset 0 0 0 1px var(--rule), inset 0 1px 2px rgba(23,21,15,.04);
+    transition: box-shadow 180ms var(--ease);
+  }
+  .deal textarea::placeholder { color: var(--ink-3); }
+  .deal textarea:focus {
+    outline: 0; box-shadow: inset 0 0 0 1px var(--accent), 0 0 0 3px var(--accent-ring);
+  }
+  .askrow { margin-top: 15px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+  /* ER-8: the limitation sits beside the button, not buried in a footer. */
+  .caveat { font: 400 13.5px/1.5 var(--sans); color: var(--ink-3); max-width: 44ch; }
+
+  button {
+    font-family: var(--sans); cursor: pointer; border: 0;
+    transition: transform 160ms var(--ease), box-shadow 160ms var(--ease), background 160ms var(--ease);
+  }
+  button:focus-visible { outline: 0; box-shadow: 0 0 0 3px var(--accent-ring); }
+  button:disabled { cursor: not-allowed; opacity: .55; transform: none; }
+
+  .primary {
+    background: var(--accent); color: var(--on-accent);
+    border-radius: var(--r-md); padding: 0 22px; min-height: 48px;
+    font-size: 14.5px; font-weight: 500; letter-spacing: -0.005em;
+    box-shadow: 0 1px 2px rgba(23,21,15,.16), 0 8px 18px -10px rgba(23,21,15,.5);
+  }
+  @media (hover: hover) {
+    .primary:not(:disabled):hover {
+      transform: translateY(-1px);
+      box-shadow: 0 3px 6px rgba(23,21,15,.18), 0 14px 26px -10px rgba(23,21,15,.55);
+    }
+  }
+  .primary:not(:disabled):active { transform: translateY(0) scale(.97); transition-duration: 80ms; }
+
+  .err {
+    margin-top: 15px; padding: 12px 14px; border-radius: var(--r-md);
+    background: rgba(154,53,39,.07); color: var(--back);
+    font: 400 13.5px/1.5 var(--sans);
+    box-shadow: inset 0 0 0 1px rgba(154,53,39,.18);
+  }
+
+  /* ── the register: SR-1 hairline rows, SR-3 right-aligned second edge ──── */
+  .register { padding: 0 var(--gut) clamp(40px, 5vw, 64px); }
+  .reghead {
+    display: flex; justify-content: space-between; align-items: baseline; gap: 16px;
+    padding-bottom: 14px; border-bottom: 2px solid var(--ink);
+  }
+
+  .row {
+    display: grid; grid-template-columns: 3.2rem minmax(0, 1fr) 13.5rem;
+    gap: 0 clamp(18px, 2.4vw, 34px);
+    padding: 27px 0; border-bottom: 1px solid var(--rule);
+  }
+  .no { font: 400 13px/1.7 var(--mono); color: var(--ink-4); font-variant-numeric: tabular-nums; }
+  .q { font: 500 19px/1.36 var(--serif); letter-spacing: -0.014em; }
+  .deliverable { margin-top: 12px; color: var(--ink-2); max-width: 64ch; }
+  .deliverable p { margin: 0 0 .52em; font: 400 15px/1.66 var(--sans); }
+  .deliverable p:last-child { margin-bottom: 0; }
+  .deliverable strong { color: var(--ink); font-weight: 500; }
+  .deliverable code {
+    font: 400 13.5px/1 var(--mono); background: var(--paper-sunk);
+    padding: 2px 5px; border-radius: var(--r-sm);
+  }
+  .deliverable.clamped {
+    display: -webkit-box; -webkit-line-clamp: 6; -webkit-box-orient: vertical; overflow: hidden;
+  }
+  .more {
+    margin-top: 10px; background: none; padding: 5px 0; min-height: 32px;
+    font: 400 13.5px/1 var(--sans); color: var(--ink-2);
+    border-bottom: 1px solid var(--rule-strong);
+  }
+  @media (hover: hover) { .more:hover { color: var(--ink); border-bottom-color: var(--ink); } }
+  .byline {
+    margin-top: 15px; font: 400 12.5px/1.55 var(--mono); color: var(--ink-3);
+    overflow-wrap: anywhere;
+  }
+  .outcome {
+    margin-top: 11px; font: 400 12.5px/1.55 var(--mono); color: var(--ink-3);
+    overflow-wrap: anywhere;
+  }
+  .trail { margin-top: 11px; display: flex; gap: 7px 16px; flex-wrap: wrap; }
+  .trail span { font: 400 12px/1.5 var(--mono); color: var(--ink-4); }
+  .trail b { font-weight: 500; color: var(--ink-3); }
+
+  .edge { text-align: right; }
+  .amt { font: 400 17px/1 var(--mono); letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+  .state {
+    display: block; margin-top: 10px;
+    font: 500 12px/1 var(--mono); letter-spacing: .16em; text-transform: uppercase;
+  }
+  .state[data-s="held"]     { color: var(--accent); }
+  .state[data-s="released"] { color: var(--paid); }
+  .state[data-s="refunded"] { color: var(--back); }
+  .clock { margin-top: 15px; }
+  .clock .t {
+    font: 500 26px/1 var(--mono); letter-spacing: -0.03em; color: var(--accent);
+    font-variant-numeric: tabular-nums;
+  }
+  .clock .c { margin-top: 6px; font: 400 12.5px/1.35 var(--sans); color: var(--ink-3); }
+
+  /* ER-9: one filled action. The second is a quiet text link, never a second button. */
+  .decide { margin-top: 17px; display: flex; flex-direction: column; align-items: flex-end; gap: 11px; }
+  .decide .go {
+    background: var(--ink); color: var(--paper);
+    border-radius: var(--r-md); padding: 0 16px; min-height: 44px; width: 100%;
+    font-size: 13.5px; font-weight: 500;
+    box-shadow: 0 1px 2px rgba(23,21,15,.16), 0 6px 14px -8px rgba(23,21,15,.5);
+  }
+  @media (hover: hover) {
+    .decide .go:not(:disabled):hover {
+      transform: translateY(-1px);
+      box-shadow: 0 3px 6px rgba(23,21,15,.18), 0 12px 22px -8px rgba(23,21,15,.55);
+    }
+  }
+  .decide .go:not(:disabled):active { transform: translateY(0) scale(.97); transition-duration: 80ms; }
+  .decide .quiet {
+    background: none; padding: 6px 0; min-height: 32px;
+    font: 400 13px/1 var(--sans); color: var(--ink-3);
+    border-bottom: 1px solid var(--rule-strong);
+  }
+  @media (hover: hover) {
+    .decide .quiet:not(:disabled):hover { color: var(--ink); border-bottom-color: var(--ink); }
+  }
+
+  .empty {
+    margin: 0; padding: 40px 0 4px; max-width: 42ch;
+    font: 400 15.5px/1.62 var(--sans); color: var(--ink-3);
+  }
+
+  /* ── footer: sunk strip, a different treatment again ───────────────────── */
+  footer {
+    margin-top: clamp(30px, 4vw, 52px); padding: 30px var(--gut) 44px;
+    background: var(--paper-sunk); box-shadow: inset 0 1px 0 var(--rule);
+  }
+  .tiers { display: flex; gap: 8px; flex-wrap: wrap; }
+  .chip {
+    padding: 7px 11px; border-radius: var(--r-full);
+    background: var(--surface); box-shadow: var(--lift-1);
+    font: 400 12.5px/1 var(--mono); color: var(--ink-2);
+  }
+  .chip[data-degraded="true"] { color: var(--ink-3); background: transparent; box-shadow: inset 0 0 0 1px var(--rule); }
+  footer p { margin: 16px 0 0; font: 400 12px/1.7 var(--mono); color: var(--ink-4); overflow-wrap: anywhere; }
+
+  /* ── responsive ───────────────────────────────────────────────────────── */
+  @media (max-width: 980px) { .next { grid-template-columns: minmax(0, 1fr); } }
+  @media (max-width: 900px) {
+    .row { grid-template-columns: 2.6rem minmax(0, 1fr); }
+    .edge { grid-column: 2; text-align: left; margin-top: 17px;
+            padding-top: 15px; border-top: 1px solid var(--rule); }
+    .decide { flex-direction: row; align-items: center; gap: 16px; }
+    .decide .go { width: auto; padding: 0 20px; }
+    .clock .t { font-size: 22px; }
+  }
+  @media (max-width: 700px) {
+    .stage { min-height: 0; padding-top: 30px; }
+    .wire { margin-top: 40px; min-height: 0; display: block; }
+    .rail { height: auto; }
+    .seg { right: 50%; }
+    .pod { position: relative; left: auto; top: auto; transform: none;
+           margin: 46px auto 0; width: 100%; min-width: 0; }
+    /* the pod drops into the flow here, so the node labels move above the line
+       rather than sitting underneath it where the pod covers them */
+    .node b { top: -19px; font-size: 12px; letter-spacing: .1em; }
+    .row { grid-template-columns: minmax(0, 1fr); }
+    .no { margin-bottom: 8px; }
+    .edge { grid-column: 1; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition-duration: 1ms !important; }
+  }
+
+  /* ══ APP SHELL ═══════════════════════════════════════════════════════════
+     Added when the site stopped being one page. The nav is repeated verbatim in
+     each HTML file rather than injected by script: there is no build step here,
+     and a nav that only exists after JS runs is a nav that does not exist to a
+     crawler or to someone on a failed script load. Seven small duplications is
+     the cheaper mistake. */
+
+  nav .mark {
+    display: inline-flex; align-items: center; gap: 9px;
+    text-decoration: none; color: var(--ink);
+  }
+  nav .mark img { width: 19px; height: 19px; display: block; }
+
+  nav .links { display: flex; gap: 2px; flex-wrap: wrap; margin-inline: auto; }
+  nav .links a {
+    display: block; padding: 5px 11px; border-radius: var(--r-sm);
+    font: 450 13.5px/1 var(--sans); letter-spacing: -0.005em;
+    color: var(--ink-3); text-decoration: none;
+    transition: color 150ms var(--ease), background-color 150ms var(--ease);
+  }
+  @media (hover: hover) {
+    nav .links a:hover { color: var(--ink); background: rgba(23, 21, 15, 0.05); }
+  }
+  nav .links a:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--accent-ring); }
+  /* The active state is the whole point of a persistent nav. A 2px rule under the
+     current item, in the accent, echoing the rail the mark is built from. */
+  nav .links a[aria-current="page"] {
+    color: var(--ink); background: transparent;
+    box-shadow: inset 0 -2px 0 var(--accent);
+    border-radius: 0;
+  }
+
+  /* ── content surfaces (/build, /invariants) ──────────────────────────────
+     Stripe's API reference puts one complete real object up top, then annotates
+     every field beneath it. That is the shape here: the artefact first, the
+     explanation after, never a paraphrase standing in for the real thing. */
+  .page { padding: clamp(34px, 4.5vw, 60px) var(--gut) clamp(56px, 7vw, 96px); }
+  .page > * { max-width: 68rem; }
+  .page h1 {
+    margin: 0 0 10px; max-width: 18ch;
+    font: 400 clamp(30px, 4.2vw, 50px)/1.02 var(--serif); letter-spacing: -0.035em;
+  }
+  .page .standfirst { margin: 0 0 clamp(34px, 4vw, 52px); max-width: 58ch; color: var(--ink-2); font-size: 16.5px; }
+
+  .doc h2 {
+    margin: clamp(40px, 4.4vw, 60px) 0 14px; max-width: 30ch;
+    font: 400 clamp(21px, 2.2vw, 26px)/1.2 var(--serif); letter-spacing: -0.022em;
+  }
+  .doc h3 {
+    margin: 30px 0 8px;
+    font: 500 15.5px/1.35 var(--sans); letter-spacing: -0.008em;
+  }
+  .doc p { margin: 0 0 13px; max-width: 64ch; color: var(--ink-2); }
+  .doc > p:first-of-type { color: var(--ink); }
+  .doc code {
+    font: 400 13px/1.5 var(--mono); background: var(--paper-sunk);
+    padding: 1.5px 5px; border-radius: var(--r-sm); overflow-wrap: anywhere;
+  }
+
+  pre.code {
+    margin: 16px 0 20px; padding: 18px 20px; overflow-x: auto;
+    background: var(--surface); border-radius: var(--r-md); box-shadow: var(--lift-1);
+    font: 400 12.8px/1.65 var(--mono); color: var(--ink-2);
+    -webkit-overflow-scrolling: touch;
+  }
+  pre.code b { font-weight: 500; color: var(--accent); }
+  pre.code i { font-style: normal; color: var(--ink-4); }
+
+  /* ── data rows (shared by /proof and /ledger) ────────────────────────────
+     Hairline rows, no cards. Same system the job register already uses, so the
+     ledger and the proof feed read as the same product rather than two widgets. */
+  .rows { border-top: 1px solid var(--rule); }
+  .row {
+    display: grid; gap: 4px 18px; align-items: baseline;
+    grid-template-columns: 148px 1fr auto;
+    padding: 13px 0; border-bottom: 1px solid var(--rule);
+  }
+  .row .k { font: 400 12.5px/1.5 var(--mono); color: var(--ink-3); }
+  .row .v { font: 400 14.5px/1.5 var(--sans); color: var(--ink); overflow-wrap: anywhere; }
+  .row .v.mono { font-family: var(--mono); font-size: 13px; }
+  .row .t { font: 400 12px/1.5 var(--mono); color: var(--ink-4); white-space: nowrap; }
+  @media (max-width: 620px) {
+    .row { grid-template-columns: 1fr; }
+    .row .t { white-space: normal; }
+  }
+
+  a.ext {
+    color: var(--accent); text-decoration: none;
+    box-shadow: inset 0 -1px 0 var(--accent-ring);
+    transition: box-shadow 150ms var(--ease);
+  }
+  @media (hover: hover) { a.ext:hover { box-shadow: inset 0 -2px 0 var(--accent); } }
+  a.ext:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--accent-ring); }
+
+  /* ── honest degradation ──────────────────────────────────────────────────
+     /proof must never present local sample data as chain data. When the evidence
+     tier is not HCS this banner is what the page says instead. */
+  .notice {
+    margin: 0 0 26px; padding: 14px 17px; border-radius: var(--r-md);
+    background: var(--paper-sunk); box-shadow: var(--lift-1);
+    font: 400 13.5px/1.6 var(--sans); color: var(--ink-2); max-width: 62rem;
+  }
+  .notice b { font-weight: 500; color: var(--ink); }
+
+  .filters { display: flex; gap: 6px; flex-wrap: wrap; margin: 0 0 22px; }
+  .filters button {
+    padding: 6px 13px; border: 0; border-radius: var(--r-full); cursor: pointer;
+    background: var(--paper-sunk); color: var(--ink-2);
+    font: 450 13px/1 var(--sans);
+    transition: transform 80ms var(--ease), box-shadow 150ms var(--ease), color 150ms var(--ease);
+  }
+  @media (hover: hover) { .filters button:hover { box-shadow: var(--lift-1); color: var(--ink); } }
+  .filters button:active { transform: scale(0.978); }
+  .filters button[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); }
+  .filters button:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--accent-ring); }
+
+  .loading { font: 400 13.5px/1.6 var(--sans); color: var(--ink-3); padding: 18px 0; }
+
+  /* entry rows on the home page: the whole row is the target, not just the text */
+  a.row.entry { text-decoration: none; color: inherit; transition: background-color 150ms var(--ease); }
+  a.row.entry .k { color: var(--accent); }
+  @media (hover: hover) { a.row.entry:hover { background: rgba(23, 21, 15, 0.028); } }
+  a.row.entry:focus-visible { outline: none; box-shadow: inset 0 0 0 3px var(--accent-ring); }
+
+  /* ── the one big number on /proof ────────────────────────────────────────
+     C's treatment of the countdown as a typographic object, reused: the balance
+     is the page's focal fact so it gets display type, not a metric card. */
+  .stat { margin: 4px 0 0; }
+  .stat .big {
+    font: 400 clamp(40px, 6vw, 72px)/1 var(--serif); letter-spacing: -0.04em;
+    font-variant-numeric: tabular-nums;
+  }
+  .stat .big .u { font-size: 0.34em; letter-spacing: 0.04em; color: var(--ink-3); margin-left: 4px; }
+  .stat .sub { margin-top: 9px; font: 400 14px/1.6 var(--sans); color: var(--ink-2); }
+  .m { font-family: var(--mono); font-weight: 400; }
+
+  .row .v .why { display: block; margin-top: 2px; font: 400 12.5px/1.5 var(--sans); color: var(--ink-3); }
+  .amt { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+  .amt.in  { color: var(--paid); }
+  .amt.out { color: var(--back); }
+
+  /* ── /invariants ─────────────────────────────────────────────────────────
+     A postmortem is the most credible thing on a page like this, so it gets the
+     accent edge rather than being tucked away in small grey type. */
+  .inv { padding: 22px 0; border-bottom: 1px solid var(--rule); }
+  .inv h3 { display: flex; align-items: baseline; gap: 11px; margin: 0 0 7px; }
+  .inv h3 .id {
+    font: 500 11.5px/1 var(--mono); letter-spacing: 0.07em; text-transform: uppercase;
+    color: var(--accent); flex: none; padding-top: 2px;
+  }
+  .inv > p { margin: 0 0 11px; color: var(--ink); max-width: 62ch; }
+  .inv ul.how { margin: 0; padding-left: 17px; max-width: 64ch; }
+  .inv ul.how li { margin: 0 0 6px; font: 400 14px/1.62 var(--sans); color: var(--ink-2); }
+  .inv ul.how li b { font-weight: 500; color: var(--ink); }
+  .inv .broke {
+    margin-top: 14px; padding: 13px 16px; border-radius: var(--r-md);
+    background: var(--paper-sunk); box-shadow: inset 3px 0 0 var(--back);
+    font: 400 13.6px/1.65 var(--sans); color: var(--ink-2); max-width: 62rem;
+  }
+  .inv .broke b { font-weight: 500; color: var(--back); }
+  .inv .broke em { font-style: italic; }

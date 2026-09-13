@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Job · Held</title>
+<meta name="color-scheme" content="light">
+<meta name="description" content="One job, its deliverable and its evidence trail on Hedera.">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="alternate icon" href="/favicon-32.png" sizes="32x32">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta property="og:title" content="Job · Held">
+<meta property="og:description" content="One job, its deliverable and its evidence trail on Hedera.">
+<meta property="og:image" content="https://heldprotocol.xyz/og.png">
+<meta property="og:url" content="https://heldprotocol.xyz/job">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;1,9..144,400&family=Spline+Sans+Mono:wght@400;500&family=Spline+Sans:wght@400;450;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/app.css">
+</head>
+<body>
+
+<nav>
+  <a class="mark" href="/"><img src="/logo.svg" alt=""><span>Held</span></a>
+  <div class="links">
+    <a href="/ask">Ask</a>
+    <a href="/ledger">Ledger</a>
+    <a href="/proof">Proof</a>
+    <a href="/build">Build</a>
+    <a href="/invariants">Invariants</a>
+  </div>
+  <span class="where">hedera testnet &middot; escrow <b id="escrow">&hellip;</b></span>
+</nav>
+
+<section class="page" style="padding-bottom:clamp(18px,2.2vw,26px)">
+  <h1 id="jobTitle">One job.</h1>
+  <p class="standfirst" id="jobSub">Reading it back&hellip;</p>
+</section>
+<section class="register" style="padding-top:0">
+  <div id="jobs"></div>
+  <div class="err" id="err" hidden></div>
+</section>
+
+<footer>
+  <div class="tiers" id="tiers"></div>
+  <p id="foot"></p>
+</footer>
+
+<script src="/app.js"></script>
+<script src="/job.js"></script>
+</body>
+</html>

@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Invariants · Held</title>
+<meta name="color-scheme" content="light">
+<meta name="description" content="Thirteen properties the money depends on, how each is enforced and tested, and the two that broke.">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="alternate icon" href="/favicon-32.png" sizes="32x32">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta property="og:title" content="Invariants · Held">
+<meta property="og:description" content="Thirteen properties the money depends on, how each is enforced and tested, and the two that broke.">
+<meta property="og:image" content="https://heldprotocol.xyz/og.png">
+<meta property="og:url" content="https://heldprotocol.xyz/invariants">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;1,9..144,400&family=Spline+Sans+Mono:wght@400;500&family=Spline+Sans:wght@400;450;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/app.css">
+</head>
+<body>
+
+<nav>
+  <a class="mark" href="/"><img src="/logo.svg" alt=""><span>Held</span></a>
+  <div class="links">
+    <a href="/ask">Ask</a>
+    <a href="/ledger">Ledger</a>
+    <a href="/proof">Proof</a>
+    <a href="/build">Build</a>
+    <a href="/invariants">Invariants</a>
+  </div>
+  <span class="where">hedera testnet &middot; escrow <b id="escrow">&hellip;</b></span>
+</nav>
+
+<section class="page doc">
+  <h1>Thirteen things the money depends on.</h1>
+  <p class="standfirst">Each one names a property, how it is enforced in code, and how it is
+    tested. Two of them have a record of the day they failed, what it cost, and why the tests that
+    existed did not catch it. Those are left in deliberately. A list of properties that have never
+    been broken is a list nobody has pushed on.</p>
+
+  <h2>Money</h2>
+<div class="inv" id="i1"><h3><span class="id">I1</span> Escrow pays out at most once per job</h3><p>Exactly one of: released to the seller, or refunded to the buyer. Never both, never twice.</p><ul class="how"><li><b>Enforced by</b> <code>store.transition()</code>, a synchronous compare-and-set that claims a job into <code>settling</code> before any transfer. It contains no <code>await</code>, so two requests cannot interleave.</li><li><b>Also enforced by</b> the deadline sweeper, which observes Hedera's scheduled transaction rather than performing its own transfer when one is armed.</li><li><b>Tested by</b> <code>attack.js</code>, five concurrent approvals against one job, exactly one accepted.</li></ul><div class="broke"><b>Broken on 2026-09-12.</b> The sweeper released at the deadline <em>and</em> the scheduled transaction executed. Two 0.05 HBAR debits for one job, thirteen seconds apart, both visible on chain. The local tier hid it: there the check and the write sit in one synchronous block, while the Hedera path has four awaits between them.</div></div><div class="inv" id="i2"><h3><span class="id">I2</span> A paid job always exists</h3><p>Once settlement succeeds, a job record exists before anything else is allowed to fail.</p><ul class="how"><li><b>Enforced by</b> ordering: settle, record the deposit, store the job, and only then arm the timer. Arming is best-effort and wrapped.</li><li><b>Tested by</b> <code>regression.js</code> case 5, which injects a schedule failure and asserts the job is still present and held.</li></ul><div class="broke"><b>Broken on 2026-09-12.</b> A transient mirror-node lookup inside <code>scheduleRelease</code> threw after settlement. The request returned 500 and the job was never stored: funds sitting in escrow with no record of whose they were.</div></div><div class="inv" id="i3"><h3><span class="id">I3</span> Losing the timer never costs the money</h3><p>If the on-chain schedule cannot be armed, or is armed and never fires, the buyer's funds still resolve.</p><ul class="how"><li><b>Enforced by</b> the sweeper's fallback, which releases directly once the grace period (90 seconds by default) has passed beyond expiry with no execution.</li><li><b>Tested by</b> <code>regression.js</code> case 5.</li></ul></div><div class="inv" id="i4"><h3><span class="id">I4</span> Silence is not a veto</h3><p>An unresponsive buyer cannot trap a seller's money. The review window always ends.</p><ul class="how"><li><b>Enforced by</b> a Hedera scheduled transaction armed at payment time, with the review deadline as its expiry and <code>waitForExpiry(true)</code>.</li><li><b>Tested by</b> <code>prove-live.js</code> case 3, which waits without intervening and confirms the release came from the schedule rather than from us.</li></ul></div><h2>Authority</h2><div class="inv" id="i5"><h3><span class="id">I5</span> Only the buyer who paid may decide</h3><p>Approve and reject are restricted to whoever made the payment.</p><ul class="how"><li><b>Enforced by</b> a claim token issued once in the payment response. Only its SHA-256 is stored, and comparison uses <code>timingSafeEqual</code>.</li></ul></div><div class="inv" id="i6"><h3><span class="id">I6</span> The server never hands out what authorises spending</h3><p>The stored token hash is never serialised to a client.</p><ul class="how"><li><b>Enforced by</b> stripping it in <code>publicJob()</code> before any job leaves the process.</li></ul></div><div class="inv" id="i7"><h3><span class="id">I7</span> No work without payment</h3><p>The agent is never invoked on an unpaid request.</p><ul class="how"><li><b>Enforced by</b> verifying the payment before <code>doWork()</code> is reached.</li></ul></div><h2>Truthfulness</h2><div class="inv" id="i8"><h3><span class="id">I8</span> Every output states which tier produced it</h3><p>A degraded result is never presented as a full one.</p><ul class="how"><li><b>Enforced by</b> a byline carried on every deliverable naming the worker tier and model.</li></ul></div><div class="inv" id="i9"><h3><span class="id">I9</span> A local run never claims anything about Hedera</h3><p>Running without keys produces no Hedera-shaped assertions.</p><ul class="how"><li><b>Enforced by</b> the stand-in tier labelling itself in the UI, in <code>/health</code>, and on every receipt.</li></ul></div><div class="inv" id="i10"><h3><span class="id">I10</span> A transaction id is a real transaction id</h3><p>Anything shown as a transaction id resolves for a third party on the mirror node.</p><ul class="how"><li><b>Verifiable by</b> you, on <a class="ext" href="/proof">the proof page</a>, without asking us.</li></ul></div><div class="inv" id="i11"><h3><span class="id">I11</span> Upstream error text never reaches a buyer</h3><p>Provider errors are not passed through.</p><ul class="how"><li><b>Enforced by</b> mapping failures to our own messages before they leave the process.</li></ul></div><h2>Secrets</h2><div class="inv" id="i12"><h3><span class="id">I12</span> No secret is ever committed</h3><p>Keys live outside the repository and never enter it.</p><ul class="how"><li><b>Enforced by</b> a pre-commit hook plus <code>npm run check:secrets</code>.</li></ul></div><div class="inv" id="i13"><h3><span class="id">I13</span> A public endpoint never spends the server's own funds without a limit</h3><p>The demo buy route is bounded, and can be switched off entirely.</p><ul class="how"><li><b>Enforced by</b> per-IP rate limiting, an input cap, and the <code>DEMO_BUY</code> switch.</li></ul></div></section>
+<footer>
+  <div class="tiers" id="tiers"></div>
+  <p id="foot"></p>
+</footer>
+
+<script src="/app.js"></script>
+
+</body>
+</html>

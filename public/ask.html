@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ask · Held</title>
+<meta name="color-scheme" content="light">
+<meta name="description" content="Buy an answer from the agent. The payment lands in escrow, not the seller, until you approve it.">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="alternate icon" href="/favicon-32.png" sizes="32x32">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta property="og:title" content="Ask · Held">
+<meta property="og:description" content="Buy an answer from the agent. The payment lands in escrow, not the seller, until you approve it.">
+<meta property="og:image" content="https://heldprotocol.xyz/og.png">
+<meta property="og:url" content="https://heldprotocol.xyz/ask">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;1,9..144,400&family=Spline+Sans+Mono:wght@400;500&family=Spline+Sans:wght@400;450;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/app.css">
+</head>
+<body>
+
+<nav>
+  <a class="mark" href="/"><img src="/logo.svg" alt=""><span>Held</span></a>
+  <div class="links">
+    <a href="/ask">Ask</a>
+    <a href="/ledger">Ledger</a>
+    <a href="/proof">Proof</a>
+    <a href="/build">Build</a>
+    <a href="/invariants">Invariants</a>
+  </div>
+  <span class="where">hedera testnet &middot; escrow <b id="escrow">&hellip;</b></span>
+</nav>
+
+<section class="page" style="padding-bottom:0">
+  <h1>Ask the agent something.</h1>
+  <p class="standfirst">It costs 0.05 HBAR. You get the answer immediately, but the money stops in
+    escrow until you approve it, reject it, or the clock runs out.</p>
+</section>
+
+<section class="deal" style="padding-top:clamp(18px,2.4vw,30px)">
+  <div class="box">
+    <label class="lab" for="q">Your question</label>
+    <textarea id="q" placeholder="What is a Hedera scheduled transaction and when does it execute?"></textarea>
+    <div class="askrow">
+      <button class="primary" id="go">Pay and ask</button>
+      <span class="caveat" id="caveat"></span>
+    </div>
+    <div class="err" id="err" hidden></div>
+  </div>
+</section>
+
+<section class="register">
+  <div class="reghead">
+    <span class="lab">What you bought</span>
+    <span class="lab" id="count"></span>
+  </div>
+  <div id="jobs"><p class="empty">You have not bought anything yet. Ask the agent a question and it turns up here with a clock on it.</p></div>
+</section>
+
+<footer>
+  <div class="tiers" id="tiers"></div>
+  <p id="foot"></p>
+</footer>
+
+<script src="/app.js"></script>
+</body>
+</html>

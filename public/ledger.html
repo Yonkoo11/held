@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ledger · Held</title>
+<meta name="color-scheme" content="light">
+<meta name="description" content="Every job this service has taken money for, filterable by whether the money is still held.">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="alternate icon" href="/favicon-32.png" sizes="32x32">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta property="og:title" content="Ledger · Held">
+<meta property="og:description" content="Every job this service has taken money for, filterable by whether the money is still held.">
+<meta property="og:image" content="https://heldprotocol.xyz/og.png">
+<meta property="og:url" content="https://heldprotocol.xyz/ledger">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;1,9..144,400&family=Spline+Sans+Mono:wght@400;500&family=Spline+Sans:wght@400;450;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/app.css">
+</head>
+<body>
+
+<nav>
+  <a class="mark" href="/"><img src="/logo.svg" alt=""><span>Held</span></a>
+  <div class="links">
+    <a href="/ask">Ask</a>
+    <a href="/ledger">Ledger</a>
+    <a href="/proof">Proof</a>
+    <a href="/build">Build</a>
+    <a href="/invariants">Invariants</a>
+  </div>
+  <span class="where">hedera testnet &middot; escrow <b id="escrow">&hellip;</b></span>
+</nav>
+
+<section class="page" style="padding-bottom:clamp(20px,2.4vw,28px)">
+  <h1>Everything that has been bought.</h1>
+  <p class="standfirst">Every job this service has taken money for, whoever bought it. The ones you
+    paid for carry buttons; the rest are here so the record is not selective.</p>
+  <div class="filters" role="group" aria-label="Filter by state">
+    <button data-f="all" aria-pressed="true">All</button>
+    <button data-f="held" aria-pressed="false">Still held</button>
+    <button data-f="released" aria-pressed="false">Seller paid</button>
+    <button data-f="refunded" aria-pressed="false">Buyer refunded</button>
+  </div>
+</section>
+
+<section class="register" style="padding-top:0">
+  <div class="reghead"><span class="lab">The register</span><span class="lab" id="count"></span></div>
+  <div id="jobs"><p class="empty">Reading the register&hellip;</p></div>
+</section>
+
+<footer>
+  <div class="tiers" id="tiers"></div>
+  <p id="foot"></p>
+</footer>
+
+<script src="/app.js"></script>
+<script src="/ledger.js"></script>
+</body>
+</html>

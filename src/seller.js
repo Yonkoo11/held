@@ -51,7 +51,10 @@ setInterval(() => {
 const app = express();
 app.set('trust proxy', 1);   // behind a tunnel, so req.ip must come from X-Forwarded-For
 app.use(express.json({ limit: '256kb' }));
-app.use(express.static(path.join(process.cwd(), 'public')));
+// `extensions` is what makes /ask serve ask.html without a routing library or a build step.
+app.use(express.static(path.join(process.cwd(), 'public'), { extensions: ['html'] }));
+// One job at its own URL, so a buyer can send someone the thing they bought.
+app.get('/job/:id', (_req, res) => res.sendFile(path.join(process.cwd(), 'public', 'job.html')));
 
 const evidence = makeEvidence();
 const settlement = makeSettlement();

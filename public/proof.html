@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Proof · Held</title>
+<meta name="color-scheme" content="light">
+<meta name="description" content="The escrow account and the consensus topic, read live from Hedera's mirror node in your browser.">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="alternate icon" href="/favicon-32.png" sizes="32x32">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta property="og:title" content="Proof · Held">
+<meta property="og:description" content="The escrow account and the consensus topic, read live from Hedera's mirror node in your browser.">
+<meta property="og:image" content="https://heldprotocol.xyz/og.png">
+<meta property="og:url" content="https://heldprotocol.xyz/proof">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;1,9..144,400&family=Spline+Sans+Mono:wght@400;500&family=Spline+Sans:wght@400;450;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/app.css">
+</head>
+<body>
+
+<nav>
+  <a class="mark" href="/"><img src="/logo.svg" alt=""><span>Held</span></a>
+  <div class="links">
+    <a href="/ask">Ask</a>
+    <a href="/ledger">Ledger</a>
+    <a href="/proof">Proof</a>
+    <a href="/build">Build</a>
+    <a href="/invariants">Invariants</a>
+  </div>
+  <span class="where">hedera testnet &middot; escrow <b id="escrow">&hellip;</b></span>
+</nav>
+
+<section class="page">
+  <h1>Do not take our word for it.</h1>
+  <p class="standfirst">Everything below is fetched from Hedera's public mirror node by your own
+    browser, right now. There is no Held server between you and the ledger, and nothing on this
+    page is a screenshot. If our service were switched off this page would still work.</p>
+
+  <div id="degraded" hidden></div>
+
+  <h2 class="lab">The escrow account</h2>
+  <p class="standfirst" style="margin-bottom:18px">This is the account the 402 quote names in
+    <code>payTo</code>. Payments land here instead of the seller's account, which is the whole
+    mechanism.</p>
+  <div class="stat">
+    <div class="big"><span id="bal">&hellip;</span> <span class="u">HBAR</span></div>
+    <div class="sub">held right now in <a class="ext" id="escLink" href="#">the escrow account</a></div>
+  </div>
+
+  <h2 class="lab" style="margin-top:46px">Money moving through it</h2>
+  <p class="standfirst" style="margin-bottom:14px">The most recent transfers touching escrow.
+    A positive figure is a buyer paying in; a negative one is a release to the seller or a refund
+    to the buyer. Every row links to the transaction on HashScan.</p>
+  <div class="rows" id="txs"><p class="loading">Reading the mirror node&hellip;</p></div>
+
+  <h2 class="lab" style="margin-top:46px">The consensus log</h2>
+  <p class="standfirst" style="margin-bottom:14px">Every state change writes a line to a Hedera
+    Consensus Service topic as it happens. These are those lines, decoded from the topic, newest
+    first. They are written by the service but ordered and timestamped by the network, so the
+    sequence is not ours to edit after the fact.</p>
+  <div class="rows" id="log"><p class="loading">Reading the topic&hellip;</p></div>
+
+  <p class="standfirst" style="margin-top:34px">
+    Topic <b id="topId" class="m">&hellip;</b> &middot;
+    <a class="ext" id="topLink" href="#">open it on HashScan</a>
+  </p>
+</section>
+
+<footer>
+  <div class="tiers" id="tiers"></div>
+  <p id="foot"></p>
+</footer>
+
+<script src="/app.js"></script>
+<script src="/proof.js"></script>
+</body>
+</html>

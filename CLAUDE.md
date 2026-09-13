@@ -1,7 +1,7 @@
 # Held (renamed from OutcomeLock, 2026-09-12 — rename applied)
 
 The product name is **Held**: the money is paid, but held until the buyer has looked. The rename
-landed across README, package.json, the page, the scripts, DEMO-SCRIPT.md and SUBMISSION.md.
+landed across README, package.json, the page, the scripts, docs/DEMO-SCRIPT.md and SUBMISSION.md.
 Two things deliberately kept the old name: `~/.outcomelock.env` (the live env path, renaming it
 mid-event breaks every npm script for no gain) and the agent ids already written to the Hedera
 evidence topic, which are records of what ran, not branding.

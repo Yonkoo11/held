@@ -1,5 +1,5 @@
 // Runs the whole Held loop against a running seller, then goes back to the Hedera mirror
-// node and checks that what we claim happened actually appears on the ledger. Writes PROOF.md.
+// node and checks that what we claim happened actually appears on the ledger. Writes evidence/PROOF.md.
 //
 //   node --env-file=.env scripts/prove-live.js
 //
@@ -197,8 +197,9 @@ async function main() {
     lines.push('## Evidence trail as recorded on consensus', '', '```',
       ...evidence.map((e) => `${e.at}  ${e.type.padEnd(18)} ${JSON.stringify(e.payload).slice(0, 100)}`), '```', '');
   }
-  fs.writeFileSync('PROOF.md', lines.join('\n'));
-  console.log('\n[prove-live] wrote PROOF.md');
+  fs.mkdirSync('evidence', { recursive: true });
+  fs.writeFileSync('evidence/PROOF.md', lines.join('\n'));
+  console.log('\n[prove-live] wrote evidence/PROOF.md');
   if (live && !allFound) process.exit(1);
 }
 

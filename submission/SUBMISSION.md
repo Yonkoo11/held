@@ -45,7 +45,7 @@ Requirement checklist, honestly marked:
 | requirement | status |
 |---|---|
 | Host a live x402-gated service on Hedera testnet/mainnet via Blocky402 | **MET** — live at <https://heldprotocol.xyz> (also <https://held-production-0ce9.up.railway.app>), escrow `0.0.10495061`, facilitator `api.testnet.blocky402.com`, fee payer `0.0.7162784` |
-| Build a platform/agent consuming that service with >= 1 real paid request | **MET** — three real paid requests on 2026-09-12, all confirmed by the mirror node. See `PROOF.md` |
+| Build a platform/agent consuming that service with >= 1 real paid request | **MET** — three real paid requests on 2026-09-12, all confirmed by the mirror node. See `../evidence/PROOF.md` |
 | Public GitHub repo with README covering setup, architecture, payment flow | READY — README.md covers all three |
 | Demo video showing paid request execution | **MET** — 2:08, 1920x1080, narrated by the operator. <https://youtu.be/E6pMtAp4fls> |
 
@@ -120,7 +120,7 @@ machine ran out of credit mid-run, the worker failed over, and the demo continue
 - Escrow account on HashScan: https://hashscan.io/testnet/account/0.0.10495061
 - Evidence topic on HashScan: https://hashscan.io/testnet/topic/0.0.10495064
 - An auto-release schedule: https://hashscan.io/testnet/schedule/0.0.10495601
-- Proof of a live run with mirror-node-confirmed transaction ids: `PROOF.md` in the repo
+- Proof of a live run with mirror-node-confirmed transaction ids: `../evidence/PROOF.md` in the repo
 
 ## What we are not claiming
 
@@ -132,7 +132,7 @@ with which agent version, and that the buyer had a real opportunity to look befo
 
 ## If Hedera never runs — no longer applicable
 
-Superseded 2026-09-12: go-live ran, and all three endings are confirmed on testnet in `PROOF.md`.
+Superseded 2026-09-12: go-live ran, and all three endings are confirmed on testnet in `../evidence/PROOF.md`.
 Kept only as the rule that applied while it was unproven:
 
 1. **Do not submit to the Hedera AI & Agentic Payments track.** A submission claiming a live Hedera
@@ -178,7 +178,7 @@ What cost us time, in the order it hurt:
 The sharpest lesson was ours, not Hedera's: our sweeper released a job while the network's own
 scheduled transaction executed it, and the account paid twice for one job thirteen seconds apart. A
 service that arms a scheduled transaction must observe it rather than repeat it. That fix is in
-`src/seller.js` and the reasoning is in `INVARIANTS.md`.
+`src/seller.js` and the reasoning is in `../evidence/INVARIANTS.md`.
 
 ### Feedback for Bazantic
 

@@ -14,3 +14,7 @@ tmp-fixture/
 video/node_modules/
 video/out/
 video/public/video/
+
+# internal pipeline state, not product
+.demo-rehearsal-state.json
+.publish-review

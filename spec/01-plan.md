@@ -40,7 +40,7 @@ unproven and everything after this is speculation.
 ### Phase 1 — can a buyer do the core thing? (2026-09-08 to 09-09)
 - `Escrow.sol` on Hedera EVM testnet: fund, lock against a job id, release, refund, deadline.
 - Seller service: x402-gated endpoint whose `payTo` is the escrow, not the seller.
-- Worker agent behind it, with the four-tier model fallback from `ACCESS.md`.
+- Worker agent behind it, with the four-tier model fallback from `../docs/ACCESS.md`.
 - Buyer agent CLI making a real paid request.
 
 **Gate:** run the buyer CLI, see 402, pay, get a deliverable, and see the money sitting in escrow on

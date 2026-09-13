@@ -52,7 +52,7 @@ there. Everything else follows from that.
 ```
 
 `settling` is the whole point. Without it, two concurrent approvals both read `held`, both pass the
-check, and both transfer — which is exactly what happened before it existed. See `INVARIANTS.md` I1.
+check, and both transfer — which is exactly what happened before it existed. See `../evidence/INVARIANTS.md` I1.
 
 `store.transition()` reads, checks and writes with **no `await` in between**, so it cannot interleave
 with another request on Node's event loop. Adding an `await` inside it reintroduces the bug.

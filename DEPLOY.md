@@ -22,9 +22,20 @@ keys are set yet. It says so on itself rather than pretending.
 
 Domain List, then Manage on heldprotocol.xyz, then the **Advanced DNS** tab.
 
-**Delete first.** Namecheap puts a parking page on a new domain, and it will fight these records.
-Remove any existing `URL Redirect Record` on host `@` and any `CNAME Record` on host `www` pointing
-at `parkingpage.namecheap.com`.
+**Delete first. This is the step that actually went wrong.** Namecheap puts parking records on a
+new domain, and adding the Railway records without removing those leaves both in place. Checked on
+2026-09-13, after the new records were added:
+
+```
+heldprotocol.xyz      -> 69.46.46.18, 162.255.119.137     both Namecheap parking, no Railway
+www.heldprotocol.xyz  -> y37qma4r.up.railway.app, 69.46.46.0    CNAME plus a leftover A record
+```
+
+A CNAME cannot coexist with another record on the same name. That is invalid DNS and it is why the
+domain resolved inconsistently and TLS failed. So before adding anything, delete every existing
+record on `@` and on `www`: the `URL Redirect Record`, any `A Record` pointing at `69.46.46.x` or
+`162.255.119.137`, and any `CNAME Record` pointing at `parkingpage.namecheap.com`. The Advanced DNS
+tab should have no `@` or `www` rows left at all before you add the two below.
 
 **Then add these two:**
 

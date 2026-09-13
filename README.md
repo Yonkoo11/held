@@ -10,6 +10,10 @@ node. Escrow [`0.0.10495061`](https://hashscan.io/testnet/account/0.0.10495061) 
 [`0.0.10495064`](https://hashscan.io/testnet/topic/0.0.10495064) · transaction ids in
 [`PROOF.md`](PROOF.md).
 
+**Live:** <https://held-production-0ce9.up.railway.app> — ask it something and watch the payment
+settle into escrow on Hedera testnet. `heldprotocol.xyz` points at the same service and starts
+serving as soon as its certificate is issued.
+
 Built for ETHOnline 2026, Hedera "AI & Agentic Payments".
 
 ![3 endings proven on testnet](https://img.shields.io/badge/endings_proven_on_testnet-3_of_3-2f6b43)

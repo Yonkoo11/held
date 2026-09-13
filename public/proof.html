@@ -65,9 +65,9 @@
     Consensus Service topic as it happens, grouped below by the job it belongs to. The service
     writes them; the network orders and timestamps them, so the sequence is not ours to edit
     afterwards.</p>
-  <p class="standfirst" style="margin-bottom:14px;font-size:13.5px">The topic holds more jobs than
-    <a class="ext" href="/ledger">the register</a> does, and that difference is worth explaining
-    rather than hiding. The topic is append-only and spans every run of this
+  <p class="standfirst" style="margin-bottom:14px;font-size:13.5px">There are more jobs on the topic than in
+    <a class="ext" href="/ledger">the register</a>, and that difference is worth explaining rather
+    than hiding. The topic is append-only and spans every run of this
     service, including development machines, whereas this deployment's own storage started empty.
     If the register were lost tomorrow, everything in it would still be on the topic, and we have
     no way to go back and change that.</p>

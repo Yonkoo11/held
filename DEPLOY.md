@@ -41,14 +41,20 @@ tab should have no `@` or `www` rows left at all before you add the two below.
 
 | Type | Host | Value | TTL |
 |---|---|---|---|
-| ALIAS Record | `@` | `i9c3rvr1.up.railway.app` | Automatic |
-| CNAME Record | `www` | `y37qma4r.up.railway.app` | Automatic |
+| ALIAS Record | `@` | `ooqoz4pq.up.railway.app` | Automatic |
+| CNAME Record | `www` | `8rlcixxv.up.railway.app` | Automatic |
 
 The root one has to be **ALIAS**, not CNAME. Plain DNS does not allow a CNAME on the root of a
 domain; Namecheap's ALIAS record is their way of doing it and it is in the same dropdown.
 
-Propagation is usually minutes, occasionally hours. Railway issues the TLS certificate on its own
-once it can see the records, so there is nothing to click afterwards.
+Propagation is usually minutes. Railway then issues the TLS certificate itself.
+
+**If the certificate sticks on "validating ownership":** Railway's own DNS check is lenient and
+reports PROPAGATED for any of its edge addresses, but the ACME challenge has to be answered by the
+exact edge the domain was registered against. Pointing at a different Railway edge therefore looks
+fine in the dashboard and never issues. The fix is to delete the custom domain and add it again,
+which mints a fresh target, and then point DNS at that new value. The targets above were minted on
+2026-09-13 for exactly that reason; the first pair wedged for forty minutes.
 
 ## Step 2 — the keys
 

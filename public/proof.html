@@ -65,6 +65,11 @@
     Consensus Service topic as it happens, grouped below by the job it belongs to. The service
     writes them; the network orders and timestamps them, so the sequence is not ours to edit
     afterwards.</p>
+  <p class="standfirst" style="margin-bottom:14px;font-size:13.5px">The topic holds more jobs than
+    <a class="ext" href="/ledger">the register</a> does, and that difference is worth explaining
+    rather than hiding. The topic is append-only and spans every run of this service, including
+    development machines. The register is this deployment's own storage, which started empty. We
+    can lose the register. We cannot edit the topic.</p>
   <div id="log"><p class="loading">Reading the topic&hellip;</p></div>
 
   <p class="standfirst" style="margin-top:30px">Topic <b id="topId" class="m">&hellip;</b> &middot;

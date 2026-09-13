@@ -8,6 +8,12 @@
   <strong>You pay first. The money waits until you have read what you bought.</strong>
 </p>
 
+<p align="center">
+  <a href="https://github.com/Yonkoo11/held/actions/workflows/tests.yml"><img src="https://github.com/Yonkoo11/held/actions/workflows/tests.yml/badge.svg" alt="tests"></a>
+  <img src="https://img.shields.io/badge/on%20chain-4%20endings%20proven-b0431c" alt="four endings proven on chain">
+  <img src="https://img.shields.io/badge/network-Hedera%20testnet-1a1714" alt="Hedera testnet">
+</p>
+
 Held is an x402-gated agent service on Hedera where the payment lands in escrow instead of the
 seller's account. A buyer pays, receives the deliverable immediately, and then decides. Approve and
 the seller is paid. Reject and the buyer is refunded. Say nothing and a Hedera scheduled transaction
@@ -19,9 +25,11 @@ backwards for work you have to read before you can judge it. Held changes one fi
 
 [Open Held](https://heldprotocol.xyz) · [Watch the demo](https://youtu.be/E6pMtAp4fls) · [Verify it on Hedera](https://heldprotocol.xyz/proof) · [Read the 402](https://heldprotocol.xyz/build) · [What can go wrong](https://heldprotocol.xyz/invariants) · [Run it locally](#quick-start)
 
-> **Project stage:** Hedera testnet only. No mainnet writes and no real funds. The escrow is a plain
-> Hedera account, not a contract, which means the operator holds its key. That is stated here, in
-> [`AI-USE.md`](AI-USE.md), and on the site, rather than left for a reader to discover.
+> **Project stage:** Hedera testnet only. No mainnet writes and no real funds. The escrow the live
+> site uses is a plain Hedera account, which means the operator holds its key. A contract that needs
+> no such trust is deployed and every ending is proven on it, but it is not what the running service
+> settles through. That is stated here, in [`AI-USE.md`](AI-USE.md), and on the site, rather than
+> left for a reader to discover.
 
 Built for ETHOnline 2026, Hedera "AI & Agentic Payments".
 
